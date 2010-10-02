@@ -1,0 +1,14 @@
+application: plysql
+version: 1
+runtime: python
+api_version: 1
+
+handlers:
+- url: /
+  script: index.py
+
+- url: /img
+  static_dir: img
+
+- url: /(.*?)
+  script: /\1
