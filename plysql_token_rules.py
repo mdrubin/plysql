@@ -25,6 +25,12 @@ token_lookup = {
     'IN':           'OPERATOR',    
     'OVER':         'OPERATOR',    
     'IS':           'OPERATOR',    
+    'CAST':         'CAST',    
+    'CASE':         'CASE',
+    'WHEN':         'WHEN',
+    'THEN':         'THEN',
+    'ELSE':         'ELSE',
+    'END':          'END',
 }    
     
 tokens = [    

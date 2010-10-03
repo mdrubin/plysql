@@ -1,4 +1,3 @@
-
 import sys
 import unittest
 
@@ -49,10 +48,24 @@ class TestPlySql(unittest.TestCase):
         for k, v in p_refDependencies.iteritems():
             self.assertEqual(v,p_dependencies[k])
 
+    def test_case(self):
+        '''test case '''
+        self.printStartBanner()
+        statement          = '''select case when x=y then z else 25  end '''
+        refSyntaxStructure = ['select', ['case', [[['when', ['x', '=', 'y']], 'then', 'z'], 'else', '25'], 'end']]
+        refDependencies    = dict(literal_all          = ['25']
+                                 ,mappings_column      = [('x', 'x'), ('y', 'y'), ('z', 'z')]
+                                 )
+        
+        result             = self.parseStatement(statement)
+        self.assertNotEqual(result,None)
+        self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
+        #self.compareDependencies(result.getDeps(),refDependencies)
+
     def test_cast_2(self):
         '''test cast 2'''
         self.printStartBanner()
-        statement          = '''select cast(null as varchar(1024)'''
+        statement          = '''select cast(null as varchar(1024))'''
         refSyntaxStructure = ['select', ['cast', ['(', ['null', 'as', 'float'], ')']]]
         refDependencies    = dict(name_all        = ['cast','float']
                                  ,names_function  = ['cast']
@@ -70,10 +83,9 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''select cast(null as float)'''
         refSyntaxStructure = ['select', ['cast', ['(', ['null', 'as', 'float'], ')']]]
-        refDependencies    = dict(name_all        = ['cast','float']
-                                 ,names_function  = ['cast']
-                                 ,literal_all     = ['null']
-                                 ,mappings_column = []
+        refDependencies    = dict(literal_all          = ['null']
+                                 ,mappings_cast        = [('null', 'float')]
+
                                  )
         
         result             = self.parseStatement(statement)
@@ -86,8 +98,7 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''where x=y and z=z'''
         refSyntaxStructure = ['where', [['x', '=', 'y'], 'and', ['z', '=', 'z']]]
-        refDependencies    = dict(name_all       = ['x','y','z','z']
-                                 ,names_column   = ['x','y','z','z']
+        refDependencies    = dict(mappings_column      = [('x', 'x'), ('y', 'y'), ('z', 'z'), ('z', 'z')]
                                  )
         
         result             = self.parseStatement(statement)
@@ -114,9 +125,8 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''where x is null'''
         refSyntaxStructure = ['where', ['x', 'is', 'null']]
-        refDependencies    = dict(name_all       = ['x']
-                                 ,names_column   = ['x']
-                                 ,literal_all    = ['null']
+        refDependencies    = dict(mappings_column  = [('x', 'x')]
+                                 ,literal_all      = ['null']
                                  )
         
         result             = self.parseStatement(statement)
@@ -129,8 +139,7 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''select t1.*'''
         refSyntaxStructure = ['select', ['t1', '.', '*']]
-        refDependencies    = dict(name_all       = ['t1.*']
-                                 ,names_column   = ['t1.*']
+        refDependencies    = dict(mappings_column      = [('t1.*', 't1.*')]
                                  )
         
         result             = self.parseStatement(statement)
@@ -143,10 +152,8 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''select 1 * 2 as c1'''
         refSyntaxStructure = ['select', [['1', '*', '2'], 'as', 'c1']]
-        refDependencies    = dict(name_all        = ['c1']
-                                 ,alias_all       = ['c1']
-                                 ,mappings_column = [('1 * 2','c1')]
-                                 ,literal_all     = ['1','2']
+        refDependencies    = dict(literal_all          = ['1', '2']
+                                 ,mappings_column      = [('1 * 2', 'c1')]
                                  )
         
         result             = self.parseStatement(statement)
@@ -159,9 +166,8 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''select pack.func(t1.x)'''
         refSyntaxStructure = ['select', [['pack', '.', 'func'], ['(', ['t1', '.', 'x'], ')']]]
-        refDependencies    = dict(name_all       = ['pack.func','t1.x']
-                                 ,names_column   = ['t1.x']
-                                 ,names_function = ['pack.func']
+        refDependencies    = dict(mappings_column      = [('t1.x', 't1.x')]
+                                 ,mappings_function    = [('pack.func', 'pack.func')]
                                  )
         
         result             = self.parseStatement(statement)
@@ -174,12 +180,9 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''select t1.*, 1 * 2 as c1, pack.func(t1.x)'''
         refSyntaxStructure = ['select', [[['t1', '.', '*'], ',', [['1', '*', '2'], 'as', 'c1']], ',', [['pack', '.', 'func'], ['(', ['t1', '.', 'x'], ')']]]]
-        refDependencies    = dict(name_all        = ['t1.*', 'c1', 'pack.func', 't1.x']
-                                 ,names_column    = ['t1.x', 't1.*']
-                                 ,names_function  = ['pack.func']
-                                 ,alias_all       = ['c1']
-                                 ,mappings_column = [('1 * 2','c1')]
-                                 ,literal_all     = ['1','2']
+        refDependencies    = dict(literal_all          = ['1', '2']
+                                 ,mappings_column      = [('t1.*', 't1.*'), ('1 * 2', 'c1'), ('t1.x', 't1.x')]
+                                 ,mappings_function    = [('pack.func', 'pack.func')]
                                  )
         
         result             = self.parseStatement(statement)
@@ -192,8 +195,7 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''select c1 * c2'''
         refSyntaxStructure = ['select', ['c1', '*', 'c2']]
-        refDependencies    = dict(name_all        = ['c1', 'c2']
-                                 ,names_column    = ['c1','c2']
+        refDependencies    = dict(mappings_column      = [('c1', 'c1'), ('c2', 'c2')]
                                  )
         
         result             = self.parseStatement(statement)
@@ -206,11 +208,10 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''select c1 * 5'''
         refSyntaxStructure = ['select', ['c1', '*', '5']]
-        refDependencies    = dict(name_all        = ['c1']
-                                 ,names_column    = ['c1']
-                                 ,literal_all     = ['5']
+        refDependencies    = dict(literal_all          = ['5']
+                                 ,mappings_column      = [('c1', 'c1')]
                                  )
-        
+       
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
@@ -221,11 +222,10 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''select sum(x) over (partition by y order by z)'''
         refSyntaxStructure = ['select', [['sum', ['(', 'x', ')']], 'over', ['(', [['partition by', 'y'], ['order by', 'z']], ')']]]
-        refDependencies    = dict(name_all       = ['sum','x','y','z']
-                                 ,names_column   = ['x','y','z']
-                                 ,names_function = ['sum']
+        refDependencies    = dict(mappings_column      = [('y', 'y'), ('z', 'z'), ('x', 'x')]
+                                 ,mappings_function    = [('sum', 'sum')]
                                  )
-        
+
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
@@ -236,9 +236,8 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''select sum(x) over (partition by y)'''
         refSyntaxStructure = ['select', [['sum', ['(', 'x', ')']], 'over', ['(', ['partition by', 'y'], ')']]]
-        refDependencies    = dict(name_all       = ['sum','x','y']
-                                 ,names_column   = ['x','y']
-                                 ,names_function = ['sum']
+        refDependencies    = dict(mappings_column      = [('y', 'y'), ('x', 'x')]
+                                 ,mappings_function    = [('sum', 'sum')]
                                  )
         
         result             = self.parseStatement(statement)
@@ -251,12 +250,9 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''create view v as select * from dual;'''
         refSyntaxStructure = ['create', 'view', ['v', 'as', [['select', '*'], ['from', 'dual']]]]
-        refDependencies    = dict(alias_all     = ['v']
-                                 ,name_all      = ['v','*','dual']
-                                 ,names_column  = ['*']
-                                 ,names_table   = ['dual']
-                                 ,names_view    = ['v']
-                                 ,mappings_view = [('select * from dual','v')]
+        refDependencies    = dict(mappings_column      = [('*', '*')]
+                                 ,mappings_table       = [('dual', 'dual')]
+                                 ,mappings_view        = [('v', 'select * from dual')]
                                  )
         
         result             = self.parseStatement(statement)
@@ -269,11 +265,8 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''join table2 t2 on t1.x = t2.x'''
         refSyntaxStructure = ['join', ['table2', 't2'], 'on', [['t1', '.', 'x'], '=', ['t2', '.', 'x']]]
-        refDependencies    = dict(alias_all      = ['t2']
-                                 ,name_all       = ['table2','t2','t1.x','t2.x']
-                                 ,names_column   = ['t1.x','t2.x']
-                                 ,names_table    = ['table2']
-                                 ,mappings_table = [('table2','t2')]
+        refDependencies    = dict(mappings_column   = [('t1.x', 't1.x'), ('t2.x', 't2.x')]
+                                 ,mappings_table    = [('table2', 't2')]
                                  )
         
         result             = self.parseStatement(statement)
@@ -286,10 +279,9 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''select substr(x,1,2)'''
         refSyntaxStructure = ['select', ['substr', ['(', [['x', ',', '1'], ',', '2'], ')']]]
-        refDependencies    = dict(name_all       = ['substr','x']
-                                 ,names_column   = ['x']
-                                 ,names_function = ['substr']
-                                 ,literal_all    = ['1','2']
+        refDependencies    = dict(mappings_column   = [('x', 'x')]
+                                 ,mappings_function = [('substr', 'substr')]
+                                 ,literal_all       = ['1','2']
                                  )
         
         result             = self.parseStatement(statement)
@@ -302,10 +294,7 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''from c1 as C1'''
         refSyntaxStructure = ['from', ['c1', 'as', 'C1']]
-        refDependencies    = dict(alias_all       = ['C1']
-                                 ,name_all        = ['c1','C1']
-                                 ,names_table     = ['c1']
-                                 ,mappings_table  = [('c1','C1')]
+        refDependencies    = dict(mappings_table  = [('c1','C1')]
                                  )
         
         result             = self.parseStatement(statement)
@@ -318,10 +307,7 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''from c1 C1'''
         refSyntaxStructure = ['from', ['c1', 'C1']]
-        refDependencies    = dict(alias_all       = ['C1']
-                                 ,name_all        = ['c1','C1']
-                                 ,names_table     = ['c1']
-                                 ,mappings_table  = [('c1','C1')]
+        refDependencies    = dict(mappings_table  = [('c1','C1')]
                                  )
         
         result             = self.parseStatement(statement)
@@ -334,11 +320,8 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''with w as (select c1)'''
         refSyntaxStructure = ['with', ['w', 'as', ['(', ['select', 'c1'], ')']]]
-        refDependencies    = dict(alias_all      = ['w']
-                                 ,name_all       = ['w','c1']
-                                 ,names_column   = ['c1']
-                                 ,names_with     = ['w']
-                                 ,mappings_with  = [('( select c1 )','w')]
+        refDependencies    = dict(mappings_column = [('c1', 'c1')]
+                                 ,mappings_with   = [('w','( select c1 )')]
                                  )
         
         result             = self.parseStatement(statement)
@@ -351,9 +334,8 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''select c1 from t1'''
         refSyntaxStructure = [['select', 'c1'], ['from', 't1']]
-        refDependencies    = dict(name_all       = ['c1', 't1']
-                                 ,names_column   = ['c1']
-                                 ,names_table    = ['t1']
+        refDependencies    = dict(mappings_column   = [('c1','c1')]
+                                 ,mappings_table    = [('t1','t1')]
                                  )
         
         result             = self.parseStatement(statement)

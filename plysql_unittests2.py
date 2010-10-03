@@ -5,6 +5,7 @@ value . value --> value.value
 is
 case when then else
 cast
+varchar ( 1024 )
 '''
 
 import sys
@@ -362,8 +363,84 @@ from (select    prd.BRON
       WHERE [AfspraakVerekenenMetRealisatieVan] is not null
       ) q
 '''
+
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
+
+    def test_statement3(self):
+        '''test_statement1'''
+        self.printStartBanner()
+        statement          = '''
+create view [XMCARE_STG].[STG_PRODUCTIE_REALISATIE_VW]
+as 
+select    *
+,         case
+            when CALC_REALISATIE_AANTAL         = 'REALISATIE_AANTAL'                     then aantal
+            else NULL
+          end as REALISATIE_AANTAL
+,         case
+            when CALC_REALISATIE_EUROS          = 'REALISATIE_AANTAL X TARIEF'            then aantal * tarief
+            when CALC_REALISATIE_EUROS          = 'REALISATIE_AANTAL X TARIEF_PER_MAAND'  then aantal * (12.0/52.0) * tarief/12
+            when CALC_REALISATIE_EUROS          = 'AFSPRAAK_AANTAL X TARIEF_PER_MAAND'    then afspraak * tarief/12
+            when CALC_REALISATIE_EUROS          = 'AFSPRAAK_AANTAL X TARIEF'              then afspraak * tarief
+            else NULL
+          end as REALISATIE_EUROS
+,         case
+            when CALC_REALISATIE_AANTAL_SAMTIJD = 'UREN_OPENSTEL_GEM_PER_WK_VANAF_JAN'    then RealisatieGemiddeldOverLopendeJaar * (12.0/52.0)  -- .0 omdat SQL Server het getal interpreteert als integer en er dan 0 als uitkomst komt vreemd genoeg.
+            when CALC_REALISATIE_AANTAL_SAMTIJD = 'GEM_BB_PER_DAG_MET_BB_PERC_CORRECTIE'  then RealisatieGemiddeldOverLopendeJaar / (BEDBEZETTING_PERC / 100.0) / (day(dateadd(mm,datediff(mm,-1,cast( MAAND_VERANTWOORDING as varchar(6)) + '01'),-1)))
+            when CALC_REALISATIE_AANTAL_SAMTIJD = 'AFSPRAAK_AANTAL'                       then afspraak
+            else NULL
+          end as REALISATIE_AANTAL_SAMTIJD
+,         (day(dateadd(mm,datediff(mm,-1,cast( MAAND_VERANTWOORDING as varchar(6)) + '01'),-1))) dagen_in_maand
+from (select    prd.BRON                                                               
+      ,         prd.NR_RUN                                                                     
+      ,         prd.BOEK_PER                                                                                                               
+      ,         prd.PROD_PER                                                                                                               
+      ,         convert(varchar(1024),isnull(kpl.kstpl_code,-1)) as KOSTENPLAATS           
+      ,         prd.C_CATEGORIE                                                                   
+      ,         prd.C_PROJECT                                                                                                              
+      ,         prd.OPN1                                                                                                                   
+      ,         prd.C_BETAAL_INSTANTIE                                                                                                     
+      ,         prd.AANTAL                                                                                                                 
+      ,         prd.AFSPRAAK                                                                   
+      ,         prd.RealisatieCummulatiefOverLopendeJaar                                       
+      ,         prd.RealisatieGemiddeldOverLopendeJaar                                         
+      ,         prd.BEDRAG                                                                                             
+      ,         prd.FINANCIERING                                                               
+      ,         prd.MAAND_VERANTWOORDING                                                       
+      ,         prd.ITEM_CODE                                                                  
+      ,         prd.ZORGVORM                                                                   
+      ,         prd.RealisatieIsAfspraak                                                       
+      ,         prd.FactProductie                                                              
+      ,         prd.ProductieGroep
+      ,         prd.CALC_REALISATIE_AANTAL                                                     
+      ,         prd.CALC_REALISATIE_EUROS                                                                                                                       
+      ,         prd.CALC_AFSPRAAK_AANTAL                                                                                                                        
+      ,         prd.CALC_AFSPRAAK_EUROS                                                                                                                         
+      ,         prd.CALC_TARIEF                                                                                                                                 
+      ,         prd.BEDBEZETTING_PERC                                                          
+      ,         prd.SemiAdditieveMeetwaarde_Tijd                                               
+      ,         prd.CALC_REALISATIE_AANTAL_SAMTIJD                                             
+      ,         prd.CALC_REALISATIE_EUROS_SAMTIJD                                                                                                                       
+      ,         prd.CALC_AFSPRAAK_AANTAL_SAMTIJD                                                                                                                        
+      ,         prd.CALC_AFSPRAAK_EUROS_SAMTIJD                                                                                                                         
+      ,         prd.CALC_TARIEF_SAMTIJD
+      ,         fin.financiering_id  
+      ,         tar.tarief  
+      from      (select    case                                                                                                          
+                             when c_betaal_instantie is null         then isnull(groep_financiering,'ONBEKEND')  
+                             when c_betaal_instantie = 'FPZ'         then 'FPZ'                                                          
+                             when c_betaal_instantie = 'RW-WISSEL'   then 'ROOIJSEWISSEL'                                                
+                             when c_betaal_instantie = 'ZRADELFT'    then 'ZRA'                                                          
+                             when c_betaal_instantie = 'ZORGKANT'    then isnull(groep_financiering,'ONBEKEND')  
+                             else                                           'OVERIGE'                                                    
+                           end as FINANCIERING         
+                )                                                                                 prd             
+      ) q
+'''
+        result             = self.parseStatement(statement)
+        self.assertNotEqual(result,None)
+
 
 def tearDown(self):
         self.lexer = None
