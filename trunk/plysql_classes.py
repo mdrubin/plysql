@@ -41,10 +41,8 @@ class Node:
         self.SyntaxStructure = []
         self.branche = []
         self.value  = ''
-        self.deps = {  'name_all':[] , 'literal_all':[]    , 'alias_all':[], 'alias_stack':[]
-                     , 'name_stack':[]   , 'names_view':[]   , 'names_with':[]   , 'names_table':[]   , 'names_column':[]   , 'names_function':[]
-                     , 'mapping_stack':[], 'mappings_view':[], 'mappings_with':[], 'mappings_table':[], 'mappings_column':[], 'mappings_subquery':[] 
-                     #, 'subqueryid':0, 'subquerylevel':0
+        self.deps = {  'mapping_all':[] , 'literal_all':[]    
+                     , 'mapping_stack':[], 'mappings_view':[], 'mappings_with':[], 'mappings_table':[], 'mappings_column':[], 'mappings_subquery':[], 'mappings_function':[], 'mappings_cast':[]  
                      }
         #self.subqueryLevel = 0
         #self.subqueryId    = 0    
@@ -138,7 +136,6 @@ class NonTerminal(Node):
             self.SyntaxStructure = self.branche[0]
         self.debugMsg('SyntaxStructure=' + str(self.SyntaxStructure),2)
         
-    # Names                
     def addLiteral(self,p_value):
         '''This methods is used by the identifier rule to add identifiers to the pool.'''
         self.debugMsg(p_value ,2)
@@ -146,79 +143,60 @@ class NonTerminal(Node):
         
     def setName(self,p_value):
         '''This methods is used by the identifier and star rule to add identifiers to the pool.'''
-        self.debugMsg("name_stack=" + str(self.deps['name_stack']),2)
+        self.debugMsg("mapping_stack=" + str(self.deps['mapping_stack']),2)
 
-        self.deps['name_stack']  = [p_value]
-        self.deps['name_all']    = [p_value]
-        self.debugMsg("name_stack=" + str(self.deps['name_stack']),2)
+        self.deps['mapping_stack']  = [(p_value,p_value)]
+        self.deps['mappings_all']    = [(p_value,p_value)]
+        
+        self.debugMsg("mapping_stack=" + str(self.deps['mapping_stack']),2)
         
     def setNameWithDots(self,p_value1,p_value2):
         '''This methods is used by the identifier and star rule to add identifiers to the pool.'''
-        self.debugMsg("name_stack=" + str(self.deps['name_stack']),2)
+        self.debugMsg("mapping_stack=" + str(self.deps['mapping_stack']),2)
 
         # override default value as set in addElementValues()
         self.value               = p_value1.getValue() + '.' + p_value2
         self.debugMsg("self.value=" + self.value,2)
 
-        self.deps['name_stack']  = [self.value]
-        self.deps['name_all']    = [self.value]
+        self.deps['mapping_stack']  = [(self.value,self.value)]
+        self.deps['mappings_all']    =[(self.value,self.value)]
         
-        self.debugMsg("name_stack=" + str(self.deps['name_stack']),2)
-        
-    def moveNamestack(self,p_element,p_target):        
-        '''This method is used to move al elements from the namestack to the targetstack. This method is used by certain rules to specify what kind of dependency it is.'''
-        self.debugMsg(str(self.wrap(p_element).getDeps()['name_stack']) + '>' + p_target, 2)        
-        self.debugMsg("name_stack=" + str(self.deps['name_stack']),2)
-        #
-        self.deps[p_target] += self.wrap(p_element).getDeps()['name_stack'] # You add the namestack of an element to the target stack
-        self.deps['name_stack']  =  []                                      # But you empty the namestack of this object ?  must the element namestack not be substracted from this object namestack
-        #
-        self.debugMsg("name_stack=" + str(self.deps['name_stack']),2)
-        
-    def moveAliasstack(self,p_element,p_target):        
-        '''This method is used to move al elements from the namestack to the targetstack. This method is used by certain rules to specify what kind of dependency it is.'''
-        self.debugMsg(str(p_element.getDeps()['alias_stack']) + '>' + p_target, 2)        
-        self.debugMsg("alias_stack=" + str(self.deps['alias_stack']),2)
-        #
-        self.deps[p_target] += p_element.getDeps()['alias_stack']
-        self.deps['alias_stack']  =  []
-        #
-        self.debugMsg("alias_stack=" + str(self.deps['alias_stack']),2)
+        self.debugMsg("mapping_stack=" + str(self.deps['mapping_stack']),2)
         
     # Mappings
+    def setMapping(self,p_expr1,p_expr2):
+        '''This method is used to store names and their meaning.'''
+        self.debugMsg((p_expr1.getValue()                ,p_expr2.getValue())                , 2)
+        self.debugMsg("mapping_stack=" + str(self.deps['mapping_stack']),2)
+        
+        self.deps['mapping_stack']  = [(p_expr1.getValue(),p_expr2.getValue())]
+        
+        self.debugMsg("mapping_stack=" + str(self.deps['mapping_stack']),2)
+
     def addMapping(self,p_expr1,p_expr2):
         '''This method is used to store names and their meaning.'''
         self.debugMsg((p_expr1.getValue()                ,p_expr2.getValue())                , 2)
-        self.debugMsg((p_expr1.getType()                 ,p_expr2.getType())                 , 2)
-        self.debugMsg("name_stack=" + str(self.deps['name_stack']),2)
-        self.debugMsg("alias_stack=" + str(self.deps['alias_stack']),2)
+        self.debugMsg("mapping_stack=" + str(self.deps['mapping_stack']),2)
         
-        if p_expr2.getType() != 'expr_identifier':
-            name    = p_expr1
-            meaning = p_expr2
-        else:
-            name    = p_expr2
-            meaning = p_expr1
+        self.deps['mapping_stack']  += [(p_expr1.getValue(),p_expr2.getValue())]
         
-        self.debugMsg("name="    + str(name.getValue()),2)
-        self.debugMsg("meaning=" + str(meaning.getValue()),2)
-
-        self.deps['alias_all']      += [name.getValue()]
-        self.deps['alias_stack']    += [name.getValue()]
-        self.deps['mapping_stack']  += [(meaning.getValue(),name.getValue())]
-        self.deps['name_stack'].remove(name.getValue())
-        #
-        self.debugMsg("alias_stack=" + str(self.deps['alias_stack']),2)
-        self.debugMsg("name_stack=" + str(self.deps['name_stack']),2)
+        self.debugMsg("mapping_stack=" + str(self.deps['mapping_stack']),2)
 
     def moveMappingstack(self,p_element,p_target):
         '''This method is used to store names and their meaning.'''
         self.debugMsg("mapping_stack=" + str(self.deps['mapping_stack']),2)
-        self.debugMsg("alias_stack=" + str(self.deps['alias_stack']),2)
-        #
+
         self.deps[p_target] += p_element.getDeps()['mapping_stack']
         self.deps['mapping_stack'] = []
-        self.deps['alias_stack'] = []
-        #
-        self.debugMsg("alias_stack=" + str(self.deps['alias_stack']),2)
+
+        self.debugMsg("mapping_stack=" + str(self.deps['mapping_stack']),2)
+
+    def moveMapping(self,p_element,p_target):
+        '''This method is used to store names and their meaning.'''
+        self.debugMsg("mapping_stack=" + str(self.deps['mapping_stack']),2)
+        self.debugMsg("p_element.mapping_stack=" + str(p_element.getDeps()['mapping_stack']),2)
+        
+        self.deps[p_target] += p_element.getDeps()['mapping_stack']
+        self.deps['mapping_stack'].remove(p_element.getDeps()['mapping_stack'][0])
+
         self.debugMsg("mapping_stack=" + str(self.deps['mapping_stack']),2)
