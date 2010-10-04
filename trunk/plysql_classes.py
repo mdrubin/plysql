@@ -35,14 +35,14 @@ def banner(text, ch='.', length=70):
     
 class Node:    
     def __init__(self,p_type,p_args):
-        self.debugLevel = 2
+        self.debugLevel = 0
         self.type = p_type
         self.elements = []
         self.SyntaxStructure = []
         self.branche = []
         self.value  = ''
-        self.deps = {  'mapping_all':[] , 'literal_all':[]    
-                     , 'mapping_stack':[], 'mappings_view':[], 'mappings_with':[], 'mappings_table':[], 'mappings_column':[], 'mappings_subquery':[], 'mappings_function':[], 'mappings_cast':[]  
+        self.deps = {  'literal_all':[]    
+                     , 'mapping_stack':[], 'mappings_view':[], 'mappings_with':[], 'mappings_table':[], 'mappings_column':[], 'mappings_function':[], 'mappings_cast':[]  
                      }
         #self.subqueryLevel = 0
         #self.subqueryId    = 0    
@@ -65,9 +65,10 @@ class Node:
             print str(p_debugLevel).rjust(2) + ' : ' + self.type.rjust(24) + ' : ' + method.rjust(30) + ' : ' + str(p_msg)
     def showDeps(self):
         print banner('dependencies','=')
-        for d in sorted(self.deps):
-            print d.ljust(20) + ':'.center(3) + str(self.deps[d])
-        print 
+        print str(self.deps)
+        #for d in sorted(self.deps):
+        #    print d.ljust(20) + ':'.center(3) + str(self.deps[d])
+        #print 
     def wrap(self,p_element):
         '''Add getter methods to an element. This method is used for grammar rules that return terminals (e.g. operators, identifiers) that have string datatype.'''
         if type(p_element) != types.InstanceType:
