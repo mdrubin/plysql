@@ -10,40 +10,17 @@ def banner(text, ch='.', length=70):
     banner = spaced_text.center(length, ch).upper() 
     return banner            
 
-    # store p[0]
-    # transfer p[0] to string
-    # add dependencies
-    # add names
-    #
-    # get parameters
-    #     wrap terminals (operators, identifiers) 
-    # execute common actions
-    #     initialize deps dictionary
-    #     set value
-    #     output value
-    # add dependencies
-    #     get dependencies from your arguments
-    # 
-    # patterns
-    #    unary:         (operator, argument)                                      argument                      --> addDeps
-    #    binary:        (left_argument, operator, right_argument)                 left_argument,right_argument  --> addDeps
-    #    binary2:       (operator1, argument1, operator2, argument2)              argument1,argument2           --> addDeps
-    #    recursive:     (element)  addElement (separator, element) -> elements[]  element                       --> addDeps
-    #    parenthesized: (element)                                                 element                       --> addDeps
-    #    named:         (content,name)                                            contenct                      --> addDeps    name --> namestack, names
-    #    unary:         (operator,argument)                                       argument                      --> addDeps
-    
 class SqlMetadata():    
     def initSqlMetadata(self):
         self.metadata = {  'literal_all':[]    
                      , 'mapping_stack':[], 'mappings_view':[], 'mappings_with':[], 'mappings_table':[], 'mappings_column':[], 'mappings_function':[], 'mappings_cast':[]  
                      }
 
-    def getDeps(self):
+    def getMetadata(self):
         return self.metadata
 
-    def showDeps(self):
-        print banner('dependencies','=')
+    def showMetadata(self):
+        print banner('metadata','=')
         print str(self.metadata)
         #for d in sorted(self.metadata):
         #    print d.ljust(20) + ':'.center(3) + str(self.metadata[d])
@@ -99,7 +76,7 @@ class SqlMetadata():
         '''This method is used to store names and their meaning.'''
         self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
 
-        self.metadata[p_target] += p_element.getDeps()['mapping_stack']
+        self.metadata[p_target] += p_element.getMetadata()['mapping_stack']
         self.metadata['mapping_stack'] = []
 
         self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
@@ -107,10 +84,10 @@ class SqlMetadata():
     def moveMapping(self,p_element,p_target):
         '''This method is used to store names and their meaning.'''
         self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
-        self.debugMsg("p_element.mapping_stack=" + str(p_element.getDeps()['mapping_stack']),2)
+        self.debugMsg("p_element.mapping_stack=" + str(p_element.getMetadata()['mapping_stack']),2)
         
-        self.metadata[p_target] += p_element.getDeps()['mapping_stack']
-        self.metadata['mapping_stack'].remove(p_element.getDeps()['mapping_stack'][0])
+        self.metadata[p_target] += p_element.getMetadata()['mapping_stack']
+        self.metadata['mapping_stack'].remove(p_element.getMetadata()['mapping_stack'][0])
 
         self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
 
@@ -167,7 +144,7 @@ class NonTerminal(Node):
         self.propagate()
 
         self.debugMsg('value=' + self.value,1)
-        #self.showDeps()
+        #self.showMetadata()
         #self.debugMsg(self.SyntaxStructure,1)
         
     # Elements        
@@ -195,9 +172,9 @@ class NonTerminal(Node):
 
     # Propagate
     def propagate(self):
-        # '''Per element add the dependencies to this object. This method is used for propagating dependencies from one node to another.'''
+        # '''Per element add the metadata to this object. This method is used for propagating metadata from one node to another.'''
         
-        # set deps 
+        # set metadata
         for e in self.elements:
             self.debugMsg(e,3)
         
@@ -212,7 +189,7 @@ class NonTerminal(Node):
                 
             for d in self.metadata:
                 # Dependencies    
-                self.metadata[d] += e.getDeps()[d]
+                self.metadata[d] += e.getMetadata()[d]
                 
         if len(self.branche)   > 1:
             self.debugMsg('len(e.branche)   > 1',3)

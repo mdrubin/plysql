@@ -44,16 +44,16 @@ class TestPlySql(unittest.TestCase):
         print result
         if result != None:
             result.debugMsg(result.getSyntaxStructure(),-1)
-            result.showDeps()
+            result.showMetadata()
         
         return result   
     def printStartBanner(self):
         print banner(sys._getframe(1).f_code.co_name,'#')
         
-    def compareDependencies(self,p_dependencies,p_refDependencies=''):
-        for k, v in p_dependencies.iteritems():
+    def compareDependencies(self,p_metadata,p_refMetadata=''):
+        for k, v in p_metadata.iteritems():
             if v != []:
-                self.assertEqual(v,p_refDependencies[k])
+                self.assertEqual(v,p_refMetadata[k])
         
     def test_statement1(self):
         '''test_statement1'''
