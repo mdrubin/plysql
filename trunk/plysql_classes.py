@@ -10,12 +10,20 @@ def banner(text, ch='.', length=70):
     banner = spaced_text.center(length, ch).upper() 
     return banner            
 
-class SqlMetadata():    
+class SqlMetadata():
     def initSqlMetadata(self):
+        self.debugLevel = 1
         self.metadata = {  'literal_all':[]    
                      , 'mapping_stack':[], 'mappings_view':[], 'mappings_with':[], 'mappings_table':[], 'mappings_column':[], 'mappings_function':[], 'mappings_cast':[]  
                      }
+    
+    def debugMsg(self, p_msg,p_debugLevel):
+        if self.debugLevel >= p_debugLevel:
+            method= self.__class__.__name__ + '.' + sys._getframe(1).f_code.co_name
+            print str(p_debugLevel).rjust(2) + ' : ' + self.type.rjust(24) + ' : ' + method.rjust(30) + ' : ' + str(p_msg)
 
+    def debugVariable(self,p_varname):
+        self.debugMsg(p_varname + str(self.metadata[p_varname]),2)
     def getMetadata(self):
         return self.metadata
 
@@ -33,16 +41,16 @@ class SqlMetadata():
         
     def setName(self,p_value):
         '''This methods is used by the identifier and star rule to add identifiers to the pool.'''
-        self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
+        self.debugVariable('mapping_stack')
 
         self.metadata['mapping_stack']  = [(p_value,p_value)]
         self.metadata['mappings_all']    = [(p_value,p_value)]
         
-        self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
+        self.debugVariable('mapping_stack')
         
     def setNameWithDots(self,p_value1,p_value2):
         '''This methods is used by the identifier and star rule to add identifiers to the pool.'''
-        self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
+        self.debugVariable('mapping_stack')
 
         # override default value as set in addElementValues()
         self.value               = p_value1.getValue() + '.' + p_value2
@@ -51,35 +59,35 @@ class SqlMetadata():
         self.metadata['mapping_stack']  = [(self.value,self.value)]
         self.metadata['mappings_all']    =[(self.value,self.value)]
         
-        self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
+        self.debugVariable('mapping_stack')
         
     # Mappings
     def setMapping(self,p_expr1,p_expr2):
         '''This method is used to store names and their meaning.'''
         self.debugMsg((p_expr1.getValue()                ,p_expr2.getValue())                , 2)
-        self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
+        self.debugVariable('mapping_stack')
         
         self.metadata['mapping_stack']  = [(p_expr1.getValue(),p_expr2.getValue())]
         
-        self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
+        self.debugVariable('mapping_stack')
 
     def addMapping(self,p_expr1,p_expr2):
         '''This method is used to store names and their meaning.'''
         self.debugMsg((p_expr1.getValue()                ,p_expr2.getValue())                , 2)
-        self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
+        self.debugVariable('mapping_stack')
         
         self.metadata['mapping_stack']  += [(p_expr1.getValue(),p_expr2.getValue())]
         
-        self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
+        self.debugVariable('mapping_stack')
 
     def moveMappingstack(self,p_element,p_target):
         '''This method is used to store names and their meaning.'''
-        self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
+        self.debugVariable('mapping_stack')
 
         self.metadata[p_target] += p_element.getMetadata()['mapping_stack']
         self.metadata['mapping_stack'] = []
 
-        self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
+        self.debugVariable('mapping_stack')
 
     def moveMapping(self,p_element,p_target):
         '''This method is used to store names and their meaning.'''
@@ -89,22 +97,18 @@ class SqlMetadata():
         self.metadata[p_target] += p_element.getMetadata()['mapping_stack']
         self.metadata['mapping_stack'].remove(p_element.getMetadata()['mapping_stack'][0])
 
-        self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
+        self.debugVariable('mapping_stack')
 
 class Node(SqlMetadata):    
-    def initNode(self,p_type):
-        self.debugLevel = 1
+    def initNode(self):
         self.initSqlMetadata()
 
-        self.type = p_type
+        self.type = sys._getframe(2).f_code.co_name
         self.elements = []
         self.SyntaxStructure = []
         self.branche = []
         self.value  = ''
         
-        #self.subqueryLevel = 0
-        #self.subqueryId    = 0    
-
     def getElements(self):
         return self.elements
 
@@ -117,35 +121,28 @@ class Node(SqlMetadata):
     def getSyntaxStructure(self):
         return self.SyntaxStructure 
 
-    def debugMsg(self, p_msg,p_debugLevel):
-        if self.debugLevel >= p_debugLevel:
-            method= self.__class__.__name__ + '.' + sys._getframe(1).f_code.co_name
-            print str(p_debugLevel).rjust(2) + ' : ' + self.type.rjust(24) + ' : ' + method.rjust(30) + ' : ' + str(p_msg)
-
     def wrap(self,p_element):
         '''Add getter methods to an element. This method is used for grammar rules that return terminals (e.g. operators, identifiers) that have string datatype.'''
         if type(p_element) != types.InstanceType:
-            return Terminal('term',p_element)
+            return Terminal(p_element)
         else: 
             return p_element
         
 class Terminal(Node):
-    def __init__(self,p_type,p_value):
-        self.initNode(p_type)
+    def __init__(self,p_value):
+        self.initNode()
         self.value = p_value
         self.type  = 'terminal'
 
 class NonTerminal(Node):
-    def __init__(self,p_type,p_elements):
-        self.initNode(p_type)
+    def __init__(self,p_elements):
+        self.initNode()
 
         self.addElements(p_elements)
         self.addElementValues()
         self.propagate()
 
         self.debugMsg('value=' + self.value,1)
-        #self.showMetadata()
-        #self.debugMsg(self.SyntaxStructure,1)
         
     # Elements        
     def getType(self):
@@ -161,24 +158,23 @@ class NonTerminal(Node):
 
     def addElementValues(self):
         '''Per Element, concatenate the values to construct the sentence belonging to this object.'''        
-        self.debugMsg(self.elements, 1)
         for e in self.elements:
-            self.debugMsg(e, 1)
-            self.debugMsg(e.getValue(), 1)
-            self.debugMsg(self.value, 1)
             self.value += ' '+ e.getValue()
             # when we have a pass through rule e.g. expr : NUMBER a space is added.These spaces must be stripped.
             self.value = self.value.lstrip(' ')
 
     # Propagate
     def propagate(self):
-        # '''Per element add the metadata to this object. This method is used for propagating metadata from one node to another.'''
+        '''Per element add the metadata to this object. This method is used for propagating metadata from one node to another.'''
         
         # set metadata
         for e in self.elements:
             self.debugMsg(e,3)
         
             #create simple SyntaxStructure
+            # no brackets around terminals
+            # ignore empty elements (does this occur ?)
+            # no brackets around a single element. 
             if e.type == 'terminal':
                 self.debugMsg('e.type == terminal',3)
                 self.branche.append(e.getValue())
@@ -198,4 +194,3 @@ class NonTerminal(Node):
             self.debugMsg('len(e.branche) == 1',3)
             self.SyntaxStructure = self.branche[0]
         self.debugMsg('SyntaxStructure=' + str(self.SyntaxStructure),2)
-        
