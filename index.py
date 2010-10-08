@@ -29,7 +29,7 @@ if len(form) == 0:
         <title>Query graph visualizer</title> 
       </head>
       <body>
-        <p align="left"> Parse | Dependencies | SqlDoc | What is PlySql | Sqetl |</p> 
+        <p align="left"> Parse | Metadata | SqlDoc | What is PlySql | Sqetl |</p> 
         <hr>
         <center>
           <img src="img/plysql-logo-100.png" alT'="PlySql"> 
@@ -51,7 +51,7 @@ else:
     <html>
     <head><title>Query</title></head>
     <body>
-      <p align="left"> Parse | Dependencies | SqlDoc </p> 
+      <p align="left"> Parse | Metadata | SqlDoc </p> 
       <hr>
         <form name="form1" method="post" action="/">
           <img src="img/plysql-logo-060.png" alT'="PlySql"> 
@@ -79,16 +79,14 @@ else:
     result = parser.parse(p_statement) 
     
     print'''<pre>'''
-    print p_statement
-    print'''</pre>'''
-    
-    
-    print'''<pre>'''
     if result != None:
         #result.debugMsg(result.getSyntaxStructure(),-1,sys._getframe().f_code.co_name)
-        result.showDeps()
+        result.showMetadata()
     print'''</pre>'''
     
+    print'''<pre>'''
+    print p_statement
+    print'''</pre>'''
     
     print '''
     </body>
