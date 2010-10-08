@@ -12,10 +12,11 @@ def banner(text, ch='.', length=70):
 
 class SqlMetadata():
     def initSqlMetadata(self):
-        self.debugLevel = 1
+        self.debugLevel = 0
         self.metadata = {  'literal_all':[]    
-                     , 'mapping_stack':[], 'mappings_view':[], 'mappings_with':[], 'mappings_table':[], 'mappings_column':[], 'mappings_function':[], 'mappings_cast':[]  
-                     }
+                        , 'name_stack':[], 'mappings_view':[], 'mappings_with':[], 'mappings_table':[], 'mappings_column':[], 'mappings_function':[], 'mappings_cast':[]  
+                        , 'mapping_stack':[], 'mappings_view':[], 'mappings_with':[], 'mappings_table':[], 'mappings_column':[], 'mappings_function':[], 'mappings_cast':[]  
+                        }
     
     def debugMsg(self, p_msg,p_debugLevel):
         if self.debugLevel >= p_debugLevel:
@@ -24,78 +25,70 @@ class SqlMetadata():
 
     def debugVariable(self,p_varname):
         self.debugMsg(p_varname + str(self.metadata[p_varname]),2)
+
     def getMetadata(self):
         return self.metadata
 
     def showMetadata(self):
         print banner('metadata','=')
-        print str(self.metadata)
-        #for d in sorted(self.metadata):
-        #    print d.ljust(20) + ':'.center(3) + str(self.metadata[d])
-        #print 
+        for d in sorted(self.metadata):
+            print d.ljust(20) + ':'.center(3) + str(self.metadata[d])
+        #print str(self.metadata)
+        print 
 
-    def addLiteral(self,p_value):
-        '''This methods is used by the identifier rule to add identifiers to the pool.'''
+    def setLiteral(self,p_value):
+        '''This methods is used by the literal rule to add literals (NUMBER,STRING,NULL) to the pool.'''
         self.debugMsg(p_value ,2)
-        self.metadata['literal_all']  += [p_value]
+        self.metadata['literal_all'] = [p_value]
         
-    def setName(self,p_value):
-        '''This methods is used by the identifier and star rule to add identifiers to the pool.'''
+    def setIdentifier(self,p_value):
+        '''This methods is used by the identifier and star rule to add identifiers (INDENTIFIER,STAR) to the pool.'''
         self.debugVariable('mapping_stack')
 
         self.metadata['mapping_stack']  = [(p_value,p_value)]
-        self.metadata['mappings_all']    = [(p_value,p_value)]
+        self.metadata['mappings_all']   = [(p_value,p_value)]
         
         self.debugVariable('mapping_stack')
         
-    def setNameWithDots(self,p_value1,p_value2):
-        '''This methods is used by the identifier and star rule to add identifiers to the pool.'''
+    def setIdentifierWithDots(self,p_value1,p_value2):
+        '''This methods is used by the identifier and star rule to add dotted identifiers (IDENTIFIER.IDENTIFIER,IDENTIFIER.STAR) to the pool.'''
         self.debugVariable('mapping_stack')
 
         # override default value as set in addElementValues()
-        self.value               = p_value1.getValue() + '.' + p_value2
+        self.value = p_value1.getValue() + '.' + p_value2
         self.debugMsg("self.value=" + self.value,2)
 
         self.metadata['mapping_stack']  = [(self.value,self.value)]
-        self.metadata['mappings_all']    =[(self.value,self.value)]
+        self.metadata['mappings_all']   = [(self.value,self.value)]
         
         self.debugVariable('mapping_stack')
         
-    # Mappings
-    def setMapping(self,p_expr1,p_expr2):
-        '''This method is used to store names and their meaning.'''
-        self.debugMsg((p_expr1.getValue()                ,p_expr2.getValue())                , 2)
-        self.debugVariable('mapping_stack')
-        
-        self.metadata['mapping_stack']  = [(p_expr1.getValue(),p_expr2.getValue())]
-        
-        self.debugVariable('mapping_stack')
-
     def addMapping(self,p_expr1,p_expr2):
-        '''This method is used to store names and their meaning.'''
-        self.debugMsg((p_expr1.getValue()                ,p_expr2.getValue())                , 2)
+        '''This method is used by alias and as expressions to store names and their meaning.'''
+        self.debugMsg( (p_expr1.getValue(),p_expr2.getValue()) , 2)
         self.debugVariable('mapping_stack')
         
         self.metadata['mapping_stack']  += [(p_expr1.getValue(),p_expr2.getValue())]
-        
-        self.debugVariable('mapping_stack')
-
-    def moveMappingstack(self,p_element,p_target):
-        '''This method is used to store names and their meaning.'''
-        self.debugVariable('mapping_stack')
-
-        self.metadata[p_target] += p_element.getMetadata()['mapping_stack']
-        self.metadata['mapping_stack'] = []
+        #self.metadata['mappings_all']   += [(p_expr1.getValue(),p_expr2.getValue())]
 
         self.debugVariable('mapping_stack')
 
     def moveMapping(self,p_element,p_target):
-        '''This method is used to store names and their meaning.'''
+        '''This method is used to move a single element from the stack.'''
         self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
         self.debugMsg("p_element.mapping_stack=" + str(p_element.getMetadata()['mapping_stack']),2)
         
         self.metadata[p_target] += p_element.getMetadata()['mapping_stack']
         self.metadata['mapping_stack'].remove(p_element.getMetadata()['mapping_stack'][0])
+
+        self.debugVariable('mapping_stack')
+
+    def moveMappingstack(self,p_element,p_target):
+        '''This method is used to move the complete stack.'''
+        self.debugVariable('mapping_stack')
+
+        self.metadata[p_target] += p_element.getMetadata()['mapping_stack']
+        self.metadata['mapping_stack'] = []
 
         self.debugVariable('mapping_stack')
 
@@ -159,6 +152,7 @@ class NonTerminal(Node):
     def addElementValues(self):
         '''Per Element, concatenate the values to construct the sentence belonging to this object.'''        
         for e in self.elements:
+            self.debugMsg(e.type, 1)    
             self.value += ' '+ e.getValue()
             # when we have a pass through rule e.g. expr : NUMBER a space is added.These spaces must be stripped.
             self.value = self.value.lstrip(' ')

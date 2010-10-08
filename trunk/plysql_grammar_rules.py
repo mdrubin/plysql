@@ -102,17 +102,28 @@ def p_clause_partition_by(p):
     p[0] = NonTerminal(p)
     p[0].moveMappingstack(p[2],'mappings_column')
 
+# function expressions
+def p_expr_function(p):
+    '''expr_function      : expr_identifier expr_parent'''
+    p[0] = NonTerminal(p)
+    p[0].moveMapping(p[1],'mappings_function')
+
+def p_expr_function_cast(p):
+    '''expr_function      : CAST expr_parent'''
+    p[0] = NonTerminal(p)
+    p[0].moveMapping(p[2],'mappings_cast')
+
 # Alias expressions (x alias, x as alias)
 def p_expr_alias(p):
     '''expr_alias         : expr expr_identifier'''
     p[0] = NonTerminal(p)
-    p[0].setMapping(p[1],p[2])
+    p[0].addMapping(p[1],p[2])
 
 def p_expr_as(p):
     '''expr_as            : expr AS      expr
                           | expr AS      expr_identifier'''
     p[0] = NonTerminal(p)
-    p[0].setMapping(p[1],p[3])
+    p[0].addMapping(p[1],p[3])
 
 # case expressions
 def p_expr_case(p):
@@ -130,17 +141,6 @@ def p_expr_conditions_first(p):
                                 | THEN  expr
                                 | ELSE  expr'''
     p[0] = NonTerminal(p)
-
-# function expressions
-def p_expr_function(p):
-    '''expr_function      : expr_identifier expr_parent'''
-    p[0] = NonTerminal(p)
-    p[0].moveMapping(p[1],'mappings_function')
-
-def p_expr_function_cast(p):
-    '''expr_function      : CAST expr_parent'''
-    p[0] = NonTerminal(p)
-    p[0].moveMapping(p[2],'mappings_cast')
 
 # Parenthesized expressions
 def p_expr_parent(p):
@@ -184,13 +184,13 @@ def p_expr_identifier_next(p):
     '''expr_identifier : expr_identifier DOT IDENTIFIER
                        | expr_identifier DOT STAR'''
     p[0] = NonTerminal(p)
-    p[0].setNameWithDots(p[1], p[3])
+    p[0].setIdentifierWithDots(p[1], p[3])
 
 def p_expr_identifier_first(p):
     '''expr_identifier : IDENTIFIER
                        | STAR'''
     p[0] = NonTerminal(p)
-    p[0].setName(p[1])
+    p[0].setIdentifier(p[1])
 
 # expressions
 # select instead of select_parent to resolve reduce/reduce conflict.
@@ -217,7 +217,7 @@ def p_term_literal(p):
                     | STRING
                     | NULL'''
     p[0] = NonTerminal(p)
-    p[0].addLiteral(p[1])
+    p[0].setLiteral(p[1])
 
 def p_empty(t):
     '''empty :'''

@@ -48,7 +48,21 @@ class TestPlySql(unittest.TestCase):
         for k, v in p_refMetadata.iteritems():
             self.assertEqual(v,p_metadata[k])
 
-    def test_case(self):
+    def test_case_alias(self):
+        '''test case '''
+        self.printStartBanner()
+        statement          = '''select case when x=y then z else 25  end as a1'''
+        refSyntaxStructure = ['select', [['case', [[['when', ['x', '=', 'y']], 'then', 'z'], 'else', '25'], 'end'], 'as', 'a1']]
+        refDependencies    = dict(literal_all          = ['25']
+                                 ,mappings_column      = [('case when x = y then z else 25 end', 'a1')]
+                                 )
+        
+        result             = self.parseStatement(statement)
+        self.assertNotEqual(result,None)
+        self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
+        self.compareDependencies(result.getMetadata(),refDependencies)
+
+    def test_case_2(self):
         '''test case '''
         self.printStartBanner()
         statement          = '''select case when x=y then z else 25  end '''
@@ -60,23 +74,51 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        #self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
-    def test_cast_2(self):
-        '''test cast 2'''
+    def test_subquery_2(self):
+        '''test case'''
         self.printStartBanner()
-        statement          = '''select cast(null as varchar(1024))'''
-        refSyntaxStructure = ['select', ['cast', ['(', ['null', 'as', 'float'], ')']]]
-        refDependencies    = dict(name_all        = ['cast','float']
-                                 ,names_function  = ['cast']
-                                 ,literal_all     = ['null']
-                                 ,mappings_column = []
+        statement          = '''select c1 from (select c2 from t2), (select c3 from t3)'''
+        refSyntaxStructure = [['select', 'c1'], ['from', [['(', [['select', 'c2'], ['from', 't2']], ')'], ',', ['(', [['select', 'c3'], ['from', 't3']], ')']]]]
+        refDependencies    = dict(mappings_column      = [('c1', 'c1'), ('c2', 'c2'), ('c3', 'c3')]
+                                 ,mappings_table       = [('t2', 't2'), ('t3', 't3')]
                                  )
         
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
+
+    def test_subquery_1(self):
+        '''test case'''
+        self.printStartBanner()
+        statement          = '''select c1 from (select c2 from (select c3 from t1))'''
+        refSyntaxStructure = [['select', 'c1'], ['from', ['(', [['select', 'c2'], ['from', ['(', [['select', 'c3'], ['from', 't1']], ')']]], ')']]]
+        refDependencies    = dict(mappings_column      = [('c1', 'c1'), ('c2', 'c2'), ('c3', 'c3')]
+		                         ,mappings_table       = [('t1','t1')]
+                                 )
+        
+        result             = self.parseStatement(statement)
+        self.assertNotEqual(result,None)
+        self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
+        self.compareDependencies(result.getMetadata(),refDependencies)
+
+    def test_cast_2(self):
+        '''test cast 2'''
+        self.printStartBanner()
+        statement          = '''select cast(null as varchar(1024))'''
+        refSyntaxStructure = ['select', ['cast', ['(', ['null', 'as', ['varchar', ['(', '1024', ')']]], ')']]]
+        refDependencies    = dict(mappings_function  = [('varchar', 'varchar')]
+                                 ,literal_all        = ['null', '1024']
+                                 ,mappings_column    = []
+                                 ,mappings_cast      = [('null', 'varchar ( 1024 )')]
+                                 )
+        
+        result             = self.parseStatement(statement)
+        self.assertNotEqual(result,None)
+        self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_cast_1(self):
         '''test cast 1'''
@@ -91,7 +133,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_and_or_1(self):
         '''test and or 1'''
@@ -104,7 +146,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_reserved_words(self):
         '''test and or 2'''
@@ -118,7 +160,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         #self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        #self.compareDependencies(result.getDeps(),refDependencies)
+        #self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_is_null(self):
         '''test is null'''
@@ -132,7 +174,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_star_dot_1(self):
         '''test star dot 1'''
@@ -145,7 +187,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_star_dot_2(self):
         '''test star dot 2'''
@@ -159,7 +201,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_star_dot_3(self):
         '''test star dot 3'''
@@ -173,7 +215,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_star_dot_4(self):
         '''test star dot 4'''
@@ -188,7 +230,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_star_dot_5(self):
         '''test star dot 5'''
@@ -201,7 +243,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_star_dot_6(self):
         '''test star dot 6'''
@@ -215,7 +257,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_partition_by_1(self):
         '''partition by 1'''
@@ -229,7 +271,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_partition_by_2(self):
         '''partition by 2'''
@@ -243,7 +285,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_view_1(self):
         '''view test'''
@@ -258,7 +300,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
  
     def test_join_1(self):
         '''join test'''
@@ -272,7 +314,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_function_1(self):
         '''function test'''
@@ -287,7 +329,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_alias_1(self):
         '''alias test from tables'''
@@ -300,7 +342,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_alias_2(self):
         '''aliases test select columns'''
@@ -313,7 +355,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_alias_3(self):
         '''aliases test with'''
@@ -327,7 +369,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_1(self):
         '''simple sql test'''
@@ -341,7 +383,7 @@ class TestPlySql(unittest.TestCase):
         result             = self.parseStatement(statement)
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getDeps(),refDependencies)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     def test_2(self):
         '''unary MINUS test'''
@@ -415,8 +457,17 @@ class TestPlySql(unittest.TestCase):
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
 
-def tearDown(self):
-        self.lexer = None
-        self.parser = None
-        
+    #def suite(self):
+    #    #suite = unittest.TestLoader().loadTestsFromTestCase(TestPlySql)
+    #    suite = unittest.Testsuite()
+    #    suite.addTest(TestPlySql('test case'))
+
+    #def tearDown(self):
+    #    self.lexer = None
+    #    self.parser = None
+
+
+#suite = TestPlySql().suite()
+#unittest.TextTestRunner(verbosity=2).run(suite)
+
 unittest.main()
