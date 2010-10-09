@@ -24,7 +24,8 @@ def p_statement(p):
 def p_create_view(p):
     '''create_view : CREATE VIEW expr_as'''
     p[0] = NonTerminal(p)
-    p[0].moveMappingstack(p[0],'mappings_view')
+    p[0].moveAlias(p[3],'aliases_view')
+    p[0].moveAliasIdentifier(p[3],0)
 
 # QUERY and SELECTS
 def p_select_next(p):
@@ -51,12 +52,15 @@ def p_clause(p):
 def p_clause_with(p):
     '''clause_with        : WITH expr_comma'''
     p[0] = NonTerminal(p)
-    p[0].moveMappingstack(p[0],'mappings_with')
+    p[0].moveAliasstack(p[2],'aliases_with')
+    p[0].moveIdentifierstack(p[2],'identifiers_alias')
 
 def p_clause_select(p):
     '''clause_select      : SELECT expr_select_modifier expr_comma'''
     p[0] = NonTerminal(p)
-    p[0].moveMappingstack(p[3],'mappings_column')
+    p[0].moveAliasIdentifiers(p[3],1)
+    p[0].moveAliasstack(p[3],'aliases_column')
+    p[0].moveIdentifierstack(p[0],'identifiers_column')
 
 def p_expr_select_modifier(p):
     '''expr_select_modifier : empty
@@ -68,62 +72,67 @@ def p_expr_select_modifier(p):
 def p_clause_from(p):
     '''clause_from        : FROM expr_comma'''
     p[0] = NonTerminal(p)
-    p[0].moveMappingstack(p[2],'mappings_table')
+    p[0].moveAliasIdentifiers(p[2],1)
+    p[0].moveAliasstack(p[2],'aliases_table')
+    p[0].moveIdentifierstack(p[0],'identifiers_table')
 
 def p_clause_join(p):
     '''clause_join        : JOIN_OPERATOR expr ON    expr
                           | JOIN_OPERATOR expr USING expr_parent'''
     p[0] = NonTerminal(p)
-    p[0].moveMapping(p[2],'mappings_table')
-    p[0].moveMappingstack(p[4],'mappings_column')
-
+    p[0].moveAlias(p[2],'aliases_table')
+    p[0].moveAliasIdentifier(p[2],1)
+    p[0].moveIdentifierstack(p[4],'identifiers_column')
+    p[0].moveIdentifierstack(p[0],'identifiers_table')
+ 
 def p_clause_where(p):
     '''clause_where       : WHERE expr'''
     p[0] = NonTerminal(p)
-    p[0].moveMappingstack(p[2],'mappings_column')
+    p[0].moveIdentifierstack(p[2],'identifiers_column')
 
 def p_clause_group_by(p):
     '''clause_group_by    : GROUP_BY expr_comma'''
     p[0] = NonTerminal(p)
-    p[0].moveMappingstack(p[2],'mappings_column')
+    p[0].moveIdentifierstack(p[2],'identifiers_column')
 
 def p_clause_having(p):
     '''clause_having      : HAVING expr'''
     p[0] = NonTerminal(p)
-    p[0].moveMappingstack(p[2],'mappings_column')
+    p[0].moveIdentifierstack(p[2],'identifiers_column')
 
 def p_clause_order_by(p):
     '''clause_order_by    : ORDER_BY expr_comma'''
     p[0] = NonTerminal(p)
-    p[0].moveMappingstack(p[2],'mappings_column')
+    p[0].moveIdentifierstack(p[2],'identifiers_column')
 
 def p_clause_partition_by(p):
     '''clause_partition_by   : PARTITION_BY expr'''
     p[0] = NonTerminal(p)
-    p[0].moveMappingstack(p[2],'mappings_column')
+    p[0].moveIdentifierstack(p[2],'identifiers_column')
 
 # function expressions
 def p_expr_function(p):
     '''expr_function      : expr_identifier expr_parent'''
     p[0] = NonTerminal(p)
-    p[0].moveMapping(p[1],'mappings_function')
+    p[0].moveIdentifier(p[1],'identifiers_function')
 
 def p_expr_function_cast(p):
     '''expr_function      : CAST expr_parent'''
     p[0] = NonTerminal(p)
-    p[0].moveMapping(p[2],'mappings_cast')
+    p[0].moveAlias(p[2],'aliases_cast')
+    p[0].moveAliasIdentifier(p[2],1)
 
 # Alias expressions (x alias, x as alias)
 def p_expr_alias(p):
     '''expr_alias         : expr expr_identifier'''
     p[0] = NonTerminal(p)
-    p[0].addMapping(p[1],p[2])
+    p[0].setAlias(p[1],p[2])
 
 def p_expr_as(p):
     '''expr_as            : expr AS      expr
                           | expr AS      expr_identifier'''
     p[0] = NonTerminal(p)
-    p[0].addMapping(p[1],p[3])
+    p[0].setAlias(p[1],p[3])
 
 # case expressions
 def p_expr_case(p):
@@ -144,7 +153,8 @@ def p_expr_conditions_first(p):
 
 # Parenthesized expressions
 def p_expr_parent(p):
-    '''expr_parent        : PARENT_L expr_comma PARENT_R'''
+    '''expr_parent        : PARENT_L expr_comma PARENT_R
+                          | PARENT_L empty      PARENT_R'''
     p[0] = NonTerminal(p)
 
 # Comma expressions
