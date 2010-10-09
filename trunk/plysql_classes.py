@@ -10,22 +10,17 @@ def banner(text, ch='.', length=70):
     banner = spaced_text.center(length, ch).upper() 
     return banner            
 
-class SqlMetadata():
+class Query():
     def initSqlMetadata(self):
-        self.debugLevel = 0
-        self.metadata = {  'literal_all':[]    
-                        , 'name_stack':[], 'mappings_view':[], 'mappings_with':[], 'mappings_table':[], 'mappings_column':[], 'mappings_function':[], 'mappings_cast':[]  
-                        , 'mapping_stack':[], 'mappings_view':[], 'mappings_with':[], 'mappings_table':[], 'mappings_column':[], 'mappings_function':[], 'mappings_cast':[]  
-                        }
+        self.debugLevel = 2
+        self.queryType  = None
+        self.name       = None
+        self.children   = []
+        self.metadata   = {  'literal_all':[]    
+                          , 'identifier_stack':[]                                 , 'identifiers_table':[], 'identifiers_column':[], 'identifiers_function':[],'identifiers_cast':[], 'identifiers_alias':[]                  
+                          , 'alias_stack':[], 'aliases_view':[], 'aliases_with':[], 'aliases_table':[]    , 'aliases_column':[]                               ,'aliases_cast':[]  
+                          }
     
-    def debugMsg(self, p_msg,p_debugLevel):
-        if self.debugLevel >= p_debugLevel:
-            method= self.__class__.__name__ + '.' + sys._getframe(1).f_code.co_name
-            print str(p_debugLevel).rjust(2) + ' : ' + self.type.rjust(24) + ' : ' + method.rjust(30) + ' : ' + str(p_msg)
-
-    def debugVariable(self,p_varname):
-        self.debugMsg(p_varname + str(self.metadata[p_varname]),2)
-
     def getMetadata(self):
         return self.metadata
 
@@ -43,70 +38,140 @@ class SqlMetadata():
         
     def setIdentifier(self,p_value):
         '''This methods is used by the identifier and star rule to add identifiers (INDENTIFIER,STAR) to the pool.'''
-        self.debugVariable('mapping_stack')
+        self.debugVariable('identifier_stack')
 
-        self.metadata['mapping_stack']  = [(p_value,p_value)]
-        self.metadata['mappings_all']   = [(p_value,p_value)]
+        self.metadata['identifier_stack']  = [p_value]
+        self.metadata['identifiers_all']   = [p_value]
         
-        self.debugVariable('mapping_stack')
+        self.debugVariable('identifier_stack')
         
     def setIdentifierWithDots(self,p_value1,p_value2):
         '''This methods is used by the identifier and star rule to add dotted identifiers (IDENTIFIER.IDENTIFIER,IDENTIFIER.STAR) to the pool.'''
-        self.debugVariable('mapping_stack')
+        self.debugVariable('identifier_stack')
 
         # override default value as set in addElementValues()
         self.value = p_value1.getValue() + '.' + p_value2
         self.debugMsg("self.value=" + self.value,2)
 
-        self.metadata['mapping_stack']  = [(self.value,self.value)]
-        self.metadata['mappings_all']   = [(self.value,self.value)]
+        self.metadata['identifier_stack']  = [self.value]
+        self.metadata['identifiers_all']   = [self.value]
         
-        self.debugVariable('mapping_stack')
+        self.debugVariable('identifier_stack')
         
-    def addMapping(self,p_expr1,p_expr2):
+    def moveIdentifier(self,p_element,p_target):
+        '''This method is used to move a single element from the stack.'''
+        self.debugVariable('identifier_stack')
+        self.debugMsg("p_element.identifier_stack=" + str(p_element.getMetadata()['identifier_stack']),2)
+        
+        self.metadata[p_target] += p_element.getMetadata()['identifier_stack']
+        self.metadata['identifier_stack'].remove(p_element.getMetadata()['identifier_stack'][0])
+
+        self.debugVariable('identifier_stack')
+
+    def moveIdentifierstack(self,p_element,p_target):
+        '''This method is used to move the complete stack.'''
+        self.debugMsg('p_element=' + str(p_element.getMetadata()))
+        self.debugVariable('identifier_stack')
+        self.debugVariable(p_target)
+
+        identifierStack = self.metadata['identifier_stack']
+        elementStack    = p_element.getMetadata()['identifier_stack']
+
+        self.debugMsg('identifierStack='  + str(identifierStack),2)
+        self.debugMsg('elementStack='     + str(elementStack),2)
+
+        self.metadata[p_target] += elementStack
+        self.metadata['identifier_stack']  =  [i for i in identifierStack if i not in elementStack]
+
+        self.debugVariable('identifier_stack')
+
+    def setAlias(self,p_expr1,p_expr2):
         '''This method is used by alias and as expressions to store names and their meaning.'''
         self.debugMsg( (p_expr1.getValue(),p_expr2.getValue()) , 2)
-        self.debugVariable('mapping_stack')
+        self.debugVariable('alias_stack')
         
-        self.metadata['mapping_stack']  += [(p_expr1.getValue(),p_expr2.getValue())]
-        #self.metadata['mappings_all']   += [(p_expr1.getValue(),p_expr2.getValue())]
+        self.metadata['alias_stack']   =  [(p_expr1.getValue(),p_expr2.getValue())]
+        
+        self.debugVariable('alias_stack')
 
-        self.debugVariable('mapping_stack')
-
-    def moveMapping(self,p_element,p_target):
+    def moveAlias(self,p_element,p_target):
         '''This method is used to move a single element from the stack.'''
-        self.debugMsg("mapping_stack=" + str(self.metadata['mapping_stack']),2)
-        self.debugMsg("p_element.mapping_stack=" + str(p_element.getMetadata()['mapping_stack']),2)
+        self.debugVariable('alias_stack')
+        self.debugMsg("p_element.alias_stack=" + str(p_element.getMetadata()['alias_stack']),2)
         
-        self.metadata[p_target] += p_element.getMetadata()['mapping_stack']
-        self.metadata['mapping_stack'].remove(p_element.getMetadata()['mapping_stack'][0])
+        self.metadata[p_target]      += p_element.getMetadata()['alias_stack']
+        self.metadata['alias_stack'].remove(p_element.getMetadata()['alias_stack'][0])
 
-        self.debugVariable('mapping_stack')
+        self.debugVariable('alias_stack')
 
-    def moveMappingstack(self,p_element,p_target):
+    def moveAliasIdentifier(self,p_element,p_identifier):
+        '''This method is used to move a single element from the stack.'''
+        self.debugVariable('identifier_stack')
+        self.debugVariable('alias_stack')
+        self.debugMsg("p_element.alias_stack=" + str(p_element.getMetadata()['alias_stack']),2)
+        
+        self.metadata['identifiers_alias']  +=   [p_element.getMetadata()['alias_stack'][0][p_identifier]]
+        try:
+            self.metadata['identifier_stack'].remove(p_element.getMetadata()['alias_stack'][0][p_identifier])
+        except ValueError:
+            self.debugMsg('WARNING: AliasIdentifier cannot be removed from the identifierStack, probably a "cast as varchar()" or so.',2)
+        self.debugVariable('alias_stack')
+        self.debugVariable('identifier_stack')
+
+    def moveAliasstack(self,p_element,p_target):
         '''This method is used to move the complete stack.'''
-        self.debugVariable('mapping_stack')
+        self.debugVariable('alias_stack')
 
-        self.metadata[p_target] += p_element.getMetadata()['mapping_stack']
-        self.metadata['mapping_stack'] = []
+        self.metadata[p_target]      += p_element.getMetadata()['alias_stack']
+        self.metadata['alias_stack']  = []
 
-        self.debugVariable('mapping_stack')
+        self.debugVariable('alias_stack')
 
-class Node(SqlMetadata):    
+    def moveAliasIdentifiers(self,p_alias,p_identifier):
+        '''This method is used to move the alias identifier.'''
+        self.debugMsg('p_alias=' + str(p_alias.getMetadata()),2)
+        self.debugVariable('identifier_stack')
+        self.debugVariable('identifiers_alias')
+        
+
+        aliasStack       = p_alias.getMetadata()['alias_stack']
+        aliasIdentifiers = [a[p_identifier]  for a in aliasStack]
+        identifierStack  = self.metadata['identifier_stack']
+
+        self.debugMsg('aliasStack='       + str(aliasStack),2)
+        self.debugMsg('aliasIdentifiers=' + str(aliasIdentifiers),2)
+        self.debugMsg('identifierStack='  + str(identifierStack),2)
+        
+        self.metadata['identifiers_alias'] += aliasIdentifiers
+        self.metadata['identifier_stack']  =  [i for i in identifierStack if i not in aliasIdentifiers]
+
+        self.debugVariable('identifiers_alias')
+        self.debugVariable('identifier_stack')
+        self.debugMsg('END moveAliasIdentifiers')
+
+class Node(Query):    
     def initNode(self):
         self.initSqlMetadata()
 
-        self.type = sys._getframe(2).f_code.co_name
+        self.nodeType = sys._getframe(2).f_code.co_name
         self.elements = []
         self.SyntaxStructure = []
         self.branche = []
         self.value  = ''
         
+    def debugMsg(self, p_msg,p_debugLevel=0,p_frame=1):
+        if self.debugLevel >= p_debugLevel:
+            method= self.__class__.__name__ + '.' + sys._getframe(p_frame).f_code.co_name
+            print str(p_debugLevel).rjust(2) + ' : ' + self.nodeType.rjust(32) + ' : ' + method.rjust(32) + ' : ' + str(p_msg)
+
+    def debugVariable(self,p_varname):
+        self.debugMsg('metadata[' + p_varname + ']=' + str(self.metadata[p_varname]),2,2)
+
     def getElements(self):
         return self.elements
 
     def getType(self):
-        return self.type
+        return self.nodeType
 
     def getValue(self):
         return self.value
@@ -125,7 +190,7 @@ class Terminal(Node):
     def __init__(self,p_value):
         self.initNode()
         self.value = p_value
-        self.type  = 'terminal'
+        self.nodeType  = 'terminal'
 
 class NonTerminal(Node):
     def __init__(self,p_elements):
@@ -139,7 +204,7 @@ class NonTerminal(Node):
         
     # Elements        
     def getType(self):
-        return self.type[2:].replace('_first','').replace('_next','')
+        return self.nodeType[2:].replace('_first','').replace('_next','')
 
     def addElements(self,p_elements):
         '''Add the elements returned from the grammar rule to the object'''        
@@ -152,7 +217,7 @@ class NonTerminal(Node):
     def addElementValues(self):
         '''Per Element, concatenate the values to construct the sentence belonging to this object.'''        
         for e in self.elements:
-            self.debugMsg(e.type, 1)    
+            self.debugMsg(e.nodeType, 1)    
             self.value += ' '+ e.getValue()
             # when we have a pass through rule e.g. expr : NUMBER a space is added.These spaces must be stripped.
             self.value = self.value.lstrip(' ')
@@ -169,7 +234,7 @@ class NonTerminal(Node):
             # no brackets around terminals
             # ignore empty elements (does this occur ?)
             # no brackets around a single element. 
-            if e.type == 'terminal':
+            if e.nodeType == 'terminal':
                 self.debugMsg('e.type == terminal',3)
                 self.branche.append(e.getValue())
             elif e.SyntaxStructure != []:
