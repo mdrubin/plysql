@@ -45,6 +45,8 @@ tokens = [
     'JOIN_OPERATOR',
     'PLUS_MINUS',
     'PARTITION_BY',
+    'CREATE_TABLE',
+    'CREATE_VIEW',
     'DOT',    
 ] + list(token_lookup.values()) 
 
@@ -113,6 +115,9 @@ def t_NEW_LINE(t):
     r'[\n]+'    
     pass    
 
+'''MS SQL Server dataypes: http://msdn.microsoft.com/en-us/library/ms187752.aspx
+   Oracle datatypes: http://ss64.com/ora/syntax-datatypes.html
+'''
 '''Matches number datatypes ( including money, signtific notation, binary constant)
 minus               -> is handled as a unaray operator
 \$?                 -> $ for money datatype
@@ -167,6 +172,14 @@ def t_PLUS_MINUS(t):
 
 def t_PARTITION_BY(t):    
     r'PARTITION[ \t]BY'    
+    return t    
+
+def t_CREATE_TABLE(t):    
+    r'CREATE[ \t]TABLE'    
+    return t    
+
+def t_CREATE_VIEW(t):    
+    r'CREATE[ \t]VIEW'    
     return t    
 
 ''' Matches identifiers and reserved words

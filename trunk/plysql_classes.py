@@ -12,25 +12,38 @@ def banner(text, ch='.', length=70):
 
 class Query():
     def initSqlMetadata(self):
-        self.debugLevel = 2
+        self.debugLevel = 0
         self.queryType  = None
         self.name       = None
         self.children   = []
+        self.initMetadata()
+    
+    def initMetadata(self):
         self.metadata   = {  'literal_all':[]    
                           , 'identifier_stack':[]                                 , 'identifiers_table':[], 'identifiers_column':[], 'identifiers_function':[],'identifiers_cast':[], 'identifiers_alias':[]                  
                           , 'alias_stack':[], 'aliases_view':[], 'aliases_with':[], 'aliases_table':[]    , 'aliases_column':[]                               ,'aliases_cast':[]  
+                          , 'subqueries':[],
                           }
-    
+
     def getMetadata(self):
         return self.metadata
 
+    def getMetadataInternal(self):
+        metadata_all = self.metadata
+        for q in self.metadata['subqueries']:
+           metadata_all += q.getMetadata()
+        return metadata_all
+
     def showMetadata(self):
         print banner('metadata','=')
-        for d in sorted(self.metadata):
-            print d.ljust(20) + ':'.center(3) + str(self.metadata[d])
-        #print str(self.metadata)
-        print 
-
+        #print self.metadata
+        for d, v in sorted(self.metadata.iteritems()):
+            if v != []:
+               print d.ljust(20) + ':'.center(3) + str(v)
+        print banner('subquery','=')
+        for q in sorted(self.metadata['subqueries']):
+            q.showMetadata()
+        
     def setLiteral(self,p_value):
         '''This methods is used by the literal rule to add literals (NUMBER,STRING,NULL) to the pool.'''
         self.debugMsg(p_value ,2)
@@ -70,7 +83,7 @@ class Query():
 
     def moveIdentifierstack(self,p_element,p_target):
         '''This method is used to move the complete stack.'''
-        self.debugMsg('p_element=' + str(p_element.getMetadata()))
+        self.debugMsg('p_element=' + str(p_element.getMetadata()),2)
         self.debugVariable('identifier_stack')
         self.debugVariable(p_target)
 
@@ -147,8 +160,11 @@ class Query():
 
         self.debugVariable('identifiers_alias')
         self.debugVariable('identifier_stack')
-        self.debugMsg('END moveAliasIdentifiers')
-
+        self.debugMsg('END moveAliasIdentifiers',2)
+    def setSubquery(self,p_subquery):
+        self.initMetadata()
+        self.metadata['subqueries'] = [p_subquery]
+        
 class Node(Query):    
     def initNode(self):
         self.initSqlMetadata()
@@ -196,8 +212,11 @@ class NonTerminal(Node):
     def __init__(self,p_elements):
         self.initNode()
 
+        # create tree synntax that follows the grammar rules exactly
         self.addElements(p_elements)
+        # create the sentence belonging to this node.
         self.addElementValues()
+        # set the metadata and create a simple syntax tree
         self.propagate()
 
         self.debugMsg('value=' + self.value,1)
@@ -226,10 +245,15 @@ class NonTerminal(Node):
     def propagate(self):
         '''Per element add the metadata to this object. This method is used for propagating metadata from one node to another.'''
         
-        # set metadata
+        # per element add element metadata to the metadata of this node
+        #             create simple syntax structure.
         for e in self.elements:
             self.debugMsg(e,3)
         
+            for d in self.metadata:
+                # Dependencies    
+                self.metadata[d] += e.getMetadata()[d]
+                
             #create simple SyntaxStructure
             # no brackets around terminals
             # ignore empty elements (does this occur ?)
@@ -241,14 +265,12 @@ class NonTerminal(Node):
                 self.debugMsg('e.SyntaxStructure != []',3)
                 self.branche.append(e.SyntaxStructure)
             self.debugMsg(self.branche,3)
-                
-            for d in self.metadata:
-                # Dependencies    
-                self.metadata[d] += e.getMetadata()[d]
-                
+
+        # create a new list (syntax structure level) when there is more than 1 element
         if len(self.branche)   > 1:
             self.debugMsg('len(e.branche)   > 1',3)
             self.SyntaxStructure = self.branche
+        # if there is just 1 element, don't create a new list (syntax structure level)
         elif len(self.branche) == 1:
             self.debugMsg('len(e.branche) == 1',3)
             self.SyntaxStructure = self.branche[0]

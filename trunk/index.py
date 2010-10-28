@@ -11,6 +11,8 @@ import cgi
 import ply.lex as lex    
 import ply.yacc as yacc    
 
+import plysql_web
+
 import plysql_token_rules    
 import plysql_grammar_rules
 
@@ -23,24 +25,46 @@ import plysql_reference
 form = cgi.FieldStorage()
 
 if len(form) == 0:
+    p_statement='''-- just an example statement
+select   t1.column01                       as c1
+,        sum(t2.column03)                  as sum_c3
+from     table01                           as t1
+join     (select table02_id
+          ,      column03
+          from   table02
+          where  t2.column02 = 'something'
+         )                                 as t2
+on       t1.table02_id = t2.table02_id
+group by t1.column01
+'''
+
     print '''
     <html>
-      <head>
-        <title>Query graph visualizer</title> 
-      </head>
+    '''
+    print plysql_web.htmlHead
+    print '''
       <body>
-        <p align="left"> Parse | Metadata | SqlDoc | What is PlySql | Sqetl |</p> 
-        <hr>
+    '''
+    print plysql_web.pageHeader
+    print '''
         <center>
           <img src="img/plysql-logo-100.png" alT'="PlySql"> 
-          <p>Enter a select or create view statement.</p>
+          <p>To make a metadata analysis please enter a select or create view statement.</p>
           <form name="form1" method="post" action="/" >
-            <textarea name="p_statement" rows="20" cols="120"></textarea>
+            <textarea name="p_statement" rows="20" cols="120">'''
+    print p_statement
+    print '''
+            </textarea>
             <p>
-              <button type="submit" > <div style="font-size:24px"> Parse </div> </button>
+    '''
+    print plysql_web.formButton
+    print '''
             </p>
         </form>
-        </center>
+      <p>Plysql is under development. </p>
+      <p>Plysql is a python application that can do a metadata-analysis on sql queries and scripts in Micorsoft Sql Server and Oracle syntax.</p>
+      <p>The metadata can be usefull in etl, sql formating and documenting tools or it can be used to perform lineage and impact analysis. </p>
+    </center>
       </body>
     </html>
     '''
@@ -49,18 +73,23 @@ else:
 
     print '''Content-Type: text/html\n
     <html>
-    <head><title>Query</title></head>
+    '''
+    print plysql_web.htmlHead
+    print '''
     <body>
-      <p align="left"> Parse | Metadata | SqlDoc </p> 
-      <hr>
+    '''
+    print plysql_web.pageHeader
+    print '''
         <form name="form1" method="post" action="/">
           <img src="img/plysql-logo-060.png" alT'="PlySql"> 
           <textarea name="p_statement" rows="6" cols="60">'''
     print p_statement
     print '''</textarea>
-          <button type="submit" > <div style="font-size:24px"> Parse </div> </button>
+    '''
+    print plysql_web.formButton
+    print '''
         </form>
-     '''
+    '''
     
     #print'''<pre>'''
     #ref = plysql_reference.PlySqlReference()
@@ -84,9 +113,9 @@ else:
         result.showMetadata()
     print'''</pre>'''
     
-    print'''<pre>'''
-    print p_statement
-    print'''</pre>'''
+    #print'''<pre>'''
+    #print p_statement
+    #print'''</pre>'''
     
     print '''
     </body>
