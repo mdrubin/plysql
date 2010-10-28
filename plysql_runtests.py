@@ -64,15 +64,24 @@ tests = [
 'test_star_dot_4_alias',
 'test_star_dot_5',
 'test_star_dot_6',
+'test_statement1',
+'test_statement2',
+'test_statement3',
 #'test_subquery_4',
 #'test_subquery_1',      
 #'test_subquery_2',
 #'test_subquery_3',
 #'test_view_1'           
 ]
+
+# Run all
+#suite = unittest.TestLoader().loadTestsFromTestCase(plysql_unittests.TestPlySql)
+
+# Run tests
 suite = unittest.TestSuite( [plysql_unittests.TestPlySql(t) for t in tests] )
 unittest.TextTestRunner(verbosity=2).run(suite)
 
+'''
 # get test functions
 m=inspect.getmembers(plysql_unittests.TestPlySql)
 l=[]
@@ -80,3 +89,4 @@ for name,type in m:
     if name[0:4] == 'test' :
         l += [name]
 print l
+'''
