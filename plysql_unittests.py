@@ -1,5 +1,5 @@
-import sys
 import unittest
+import sys
 
 import ply.lex as lex    
 import ply.yacc as yacc    
@@ -11,35 +11,35 @@ import re
 from plysql_classes import banner
 from plysql_classes import Node
 
-import plysql_reference
-
-ref = plysql_reference.PlySqlReference()
-ref.showReference()
-
 class TestPlySql(unittest.TestCase):
-    pass
     def setUp(self):
         self.lexer = lex.lex(module=plysql_token_rules, reflags = re.IGNORECASE)    
 
     def parseStatement(self,p_statement,p_start='statement'):       
+
         print banner('Statement','=')        
         print p_statement
+
         print banner('Lexer Results','=')        
         self.lexer.input(p_statement)    
         for tok in self.lexer:    
             print tok.type.rjust(16) + ' : ' + tok.value    
+
         print banner('Create Parser','=')
         self.parser = yacc.yacc(start=p_start,module=plysql_grammar_rules,outputdir='out')    
+
         print banner('Parse','=')        
         result = self.parser.parse(p_statement) 
         print result
 
         print banner('Simple Syntax and Metadata','=')        
         if result != None:
-            result.debugMsg(result.getSyntaxStructure(),-1)
+            result.debugMsg(result.getSyntaxStructure(),1)
             result.showMetadata()
+
         print banner('Statement','=')        
         print p_statement
+
         print banner('end testcase','=')        
         
         return result   
@@ -54,6 +54,89 @@ class TestPlySql(unittest.TestCase):
         for k, v in p_refMetadata.iteritems():
             self.assertEqual(v,p_metadata[k])
 
+
+    def test_create_table_1(self):
+        '''create table test 1'''
+        self.printStartBanner()
+        statement          = '''create table tab1 (numbercol1 number);'''
+        refSyntaxStructure = ['create table', 'tab1', ['(', ['numbercol1', 'number'], ')']]
+        refDependencies    = dict(identifier_stack        = []
+                                 )
+        
+        result             = self.parseStatement(statement)
+        self.assertNotEqual(result,None)
+        self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
+        self.compareDependencies(result.getMetadata(),refDependencies)
+
+    def test_create_table_2(self):
+        '''create table test 2'''
+        self.printStartBanner()
+        statement          = '''create table tab1 (col1 number(3,1));'''
+        refSyntaxStructure = ['create table', 'tab1', ['(', ['col1', ['number', ['(', ['3', ',', '1'], ')']]], ')']]
+        refDependencies    = dict(identifier_stack        = []
+                                 ,literal_all             = ['3','1']
+                                 )
+        
+        result             = self.parseStatement(statement)
+        self.assertNotEqual(result,None)
+        self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
+        self.compareDependencies(result.getMetadata(),refDependencies)
+    #
+    # SubQuery
+    #
+    def test_subquery_4(self):
+        '''subquery 4'''
+        self.printStartBanner()
+        statement          = '''select (select 1) + 5'''
+        refSyntaxStructure = ['select', [['(', ['select', '1'], ')'], '+', '5']]
+        result             = self.parseStatement(statement)
+        self.assertNotEqual(result,None)
+        self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
+
+    def test_subquery_3(self):
+        '''subquery 3'''
+        self.printStartBanner()
+        statement          = '''select c1 from (select c2 from t2) as q1 , (select c3 from (select c4 from t4) as q4)'''
+        refSyntaxStructure = [['select', 'c1'], ['from', [[['(', [['select', 'c2'], ['from', 't2']], ')'], 'as', 'q1'], ',', ['(', [['select', 'c3'], ['from', [['(', [['select', 'c4'], ['from', 't4']], ')'], 'as', 'q4']]], ')']]]]
+        refDependencies    = dict(identifiers_column      = ['c1', 'c2','c3']
+                                 ,identifiers_table       = ['t2', 't3']
+                                 ,subqueries              = ['select c2 from t2','select c4 from t4']
+                                 )
+        
+        result             = self.parseStatement(statement)
+        self.assertNotEqual(result,None)
+        self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
+        #self.compareDependencies(result.getMetadata(),refDependencies)
+
+    def test_subquery_2(self):
+        '''subquery 2'''
+        self.printStartBanner()
+        statement          = '''select c1 from (select c2 from t2), (select c3 from t3)'''
+        refSyntaxStructure = [['select', 'c1'], ['from', [['(', [['select', 'c2'], ['from', 't2']], ')'], ',', ['(', [['select', 'c3'], ['from', 't3']], ')']]]]
+        refDependencies    = dict(identifiers_column      = ['c1', 'c2','c3']
+                                 ,identifiers_table       = ['t2', 't3']
+                                 ,subqueries              = ['select c2 from t2','select c3 from t3']
+                                 )
+        
+        result             = self.parseStatement(statement)
+        self.assertNotEqual(result,None)
+        self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
+        #self.compareDependencies(result.getMetadata(),refDependencies)
+
+    def test_subquery_1(self):
+        '''subquery 1'''
+        self.printStartBanner()
+        statement          = '''select c1 from (select c2 from (select c3 from t1))'''
+        refSyntaxStructure = [['select', 'c1'], ['from', ['(', [['select', 'c2'], ['from', ['(', [['select', 'c3'], ['from', 't1']], ')']]], ')']]]
+        refDependencies    = dict(identifiers_column      = ['c1']
+                                 ,identifiers_table       = ['t1']
+                                 ,subqueries              = ['select c2 from (select c3 from t1)','select c3 from t1']
+                                 )
+        
+        result             = self.parseStatement(statement)
+        self.assertNotEqual(result,None)
+        self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
+        self.compareDependencies(result.getMetadata(),refDependencies)
 
     #
     # ALIAS tests
@@ -79,12 +162,11 @@ class TestPlySql(unittest.TestCase):
         self.printStartBanner()
         statement          = '''select cast(c1 as varchar(1024))'''
         refSyntaxStructure = ['select', ['cast', ['(', ['c1', 'as', ['varchar', ['(', '1024', ')']]], ')']]]
-        refDependencies    = dict(identifiers_function  = ['varchar']
-                                 ,literal_all        = ['1024']
-                                 ,identifiers_column = ['c1']
-                                 ,identifiers_alias  = ['varchar ( 1024 )']
-                                 ,aliases_cast       = [('c1', 'varchar ( 1024 )')]
-                                 ,identifiers_cast   = []
+        refDependencies    = dict(literal_all           = ['1024']
+                                 ,identifiers_column    = ['c1']
+                                 ,identifiers_alias     = ['varchar ( 1024 )']
+                                 ,aliases_cast          = [('c1', 'varchar ( 1024 )')]
+                                 ,identifiers_function  = ['varchar']
                                  )
         
         result             = self.parseStatement(statement)
@@ -145,12 +227,13 @@ class TestPlySql(unittest.TestCase):
         '''view test'''
         self.printStartBanner()
         statement          = '''create view v as select * from dual;'''
-        refSyntaxStructure = ['create', 'view', ['v', 'as', [['select', '*'], ['from', 'dual']]]]
+        refSyntaxStructure = ['create view', ['v', 'as', [['select', '*'], ['from', 'dual']]]] 
         refDependencies    = dict(identifiers_column      = ['*']
                                  ,identifiers_table       = ['dual']
                                  ,aliases_view            = [('v', 'select * from dual')]
                                  ,identifiers_alias       = ['v']
                                  ,identifier_stack        = []
+                                 ,subqueries              = ['select * from dual']
                                  )
         
         result             = self.parseStatement(statement)
@@ -214,6 +297,7 @@ class TestPlySql(unittest.TestCase):
                                  ,identifiers_alias  = ['w']
                                  ,alias_stack        = []
                                  ,identifier_stack   = []
+                                 ,subqueries         = ['select c1']     
                                  )
         
         result             = self.parseStatement(statement)
@@ -231,34 +315,6 @@ class TestPlySql(unittest.TestCase):
         refSyntaxStructure = ['select', ['case', [[['when', ['x', '=', 'y']], 'then', 'z'], 'else', '25'], 'end']]
         refDependencies    = dict(literal_all          = ['25']
                                  ,identifiers_column      = ['x', 'y', 'z']
-                                 )
-        
-        result             = self.parseStatement(statement)
-        self.assertNotEqual(result,None)
-        self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getMetadata(),refDependencies)
-
-    def test_subquery_2(self):
-        '''test case'''
-        self.printStartBanner()
-        statement          = '''select c1 from (select c2 from t2), (select c3 from t3)'''
-        refSyntaxStructure = [['select', 'c1'], ['from', [['(', [['select', 'c2'], ['from', 't2']], ')'], ',', ['(', [['select', 'c3'], ['from', 't3']], ')']]]]
-        refDependencies    = dict(identifiers_column      = ['c1', 'c2','c3']
-                                 ,identifiers_table       = ['t2', 't3']
-                                 )
-        
-        result             = self.parseStatement(statement)
-        self.assertNotEqual(result,None)
-        self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-        self.compareDependencies(result.getMetadata(),refDependencies)
-
-    def test_subquery_1(self):
-        '''test case'''
-        self.printStartBanner()
-        statement          = '''select c1 from (select c2 from (select c3 from t1))'''
-        refSyntaxStructure = [['select', 'c1'], ['from', ['(', [['select', 'c2'], ['from', ['(', [['select', 'c3'], ['from', 't1']], ')']]], ')']]]
-        refDependencies    = dict(identifiers_column      = ['c1', 'c2', 'c3']
-                                 ,identifiers_table       = ['t1']
                                  )
         
         result             = self.parseStatement(statement)
@@ -465,15 +521,6 @@ class TestPlySql(unittest.TestCase):
         self.assertNotEqual(result,None)
         self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
 
-    def test_4(self):
-        '''subquery test'''
-        self.printStartBanner()
-        statement          = '''select (select 1) + 5'''
-        refSyntaxStructure = ['select', [['(', ['select', '1'], ')'], '+', '5']]
-        result             = self.parseStatement(statement)
-        self.assertNotEqual(result,None)
-        self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
-
     def test_5(self):
         '''select *'''
         self.printStartBanner()
@@ -528,8 +575,3 @@ class TestPlySql(unittest.TestCase):
     #    self.lexer = None
     #    self.parser = None
 
-
-#suite = TestPlySql().suite()
-#unittest.TextTestRunner(verbosity=2).run(suite)
-
-unittest.main()
