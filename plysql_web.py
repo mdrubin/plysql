@@ -1,19 +1,15 @@
 pageHeader='''
               <p align="left"> 
-                <a href="/">Home</a> 
-                <a href="what-is-plysql">What is PlySql ?</a> 
-                <a href="http://code.google.com/p/plysql/">Project Home</a>
-                <a href="http://blog.holkevisser.nl/">My Blog</a>
+                <a href="/">Home</a> &nbsp; 
+                <a href="what-is-plysql">What is PlySql ?</a> &nbsp; 
+                <a href="http://code.google.com/p/plysql/">Project Home</a> &nbsp; 
+                <a href="http://blog.holkevisser.nl/">My Blog</a> &nbsp; 
               </p> 
               <!-- Parse | Metadata | SqlDoc | Sqetl -->
               <hr>
            '''
 
-formButton='''
-    <p><button type="submit" > <div style="font-size:24px"> Get Sql Metadata </div> </button> </p>
-    
-
-'''
+formButton='''<button type="submit" > <div style="font-size:24px"> Get Sql Metadata </div> </button>'''
 
 htmlHead='''
   <head>    
@@ -35,7 +31,8 @@ htmlHead='''
 '''
 
 pageFooter='''
-      <p><a href="http://blog.holkevisser.nl/">My Blog</a> <a href="http://code.google.com/p/plysql/">PlySql Project Home</a></p>
+      <hr>
+      <p><a href="http://blog.holkevisser.nl/">My Blog</a> &nbsp; <a href="http://code.google.com/p/plysql/">Project Home</a></p>
       <p>Plysql is under development. </p>
       <p>Plysql is a python application that can do a metadata-analysis on sql queries and scripts in Micorsoft Sql Server and Oracle syntax.</p>
       <p>At this moment only create view, create table and select statements are supported.</p>
