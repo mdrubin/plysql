@@ -36,20 +36,21 @@ join     (select table02_id
          )                                 as t2
 on       t1.table02_id = t2.table02_id
 group by t1.column01
+
+create table table01 
+(table01_id number
+,column01   varchar2(126)
+,table02_id number)
 '''
 
-    print '''
-    <html>
-    '''
+    print '''<html>'''
     print plysql_web.htmlHead
-    print '''
-      <body>
-    '''
+    print '''<body>'''
     print plysql_web.pageHeader
     print '''
         <center>
           <img src="img/plysql-logo-100.png" alT'="PlySql"> 
-          <p>To make a metadata analysis please enter a select or create view statement.</p>
+          <p>To make a metadata analysis please enter your sql script below.</p>
           <form name="form1" method="post" action="/" >
             <textarea name="p_statement" rows="20" cols="120">'''
     print p_statement
@@ -61,10 +62,10 @@ group by t1.column01
     print '''
             </p>
         </form>
-      <p>Plysql is under development. </p>
-      <p>Plysql is a python application that can do a metadata-analysis on sql queries and scripts in Micorsoft Sql Server and Oracle syntax.</p>
-      <p>The metadata can be usefull in etl, sql formating and documenting tools or it can be used to perform lineage and impact analysis. </p>
-    </center>
+    '''
+    print plysql_web.pageFooter
+    print '''
+        </center>
       </body>
     </html>
     '''
@@ -117,6 +118,7 @@ else:
     #print p_statement
     #print'''</pre>'''
     
+    print plysql_web.pageFooter
     print '''
     </body>
     </html>
