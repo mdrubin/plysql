@@ -31,7 +31,6 @@ htmlHead='''
 '''
 
 pageFooter='''
-      <hr>
       <p><a href="http://blog.holkevisser.nl/">My Blog</a> &nbsp; <a href="http://code.google.com/p/plysql/">Project Home</a></p>
       <p>Plysql is under development. </p>
       <p>Plysql is a python application that can do a metadata-analysis on sql queries and scripts in Micorsoft Sql Server and Oracle syntax.</p>
