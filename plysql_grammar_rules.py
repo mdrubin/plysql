@@ -10,7 +10,7 @@ from plysql_classes import NonTerminal
 # don't use nonassoc because it prevents 1+2+3+4 and results in an syntax error.
 precedence = (
     ('left','AS'),              # - resolve syntax error
-    ('left','LOG_OPERATOR'),    # - first apply normal operators
+    ('left','AND','OR'),        # - first apply normal operators
     ('left','NOT'),             #   then the
     ('left','OPERATOR','STAR'), #   operators before logical operators
     ('left','IDENTIFIER'),      #
@@ -206,13 +206,18 @@ def p_expr_comma_first(p):
     '''expr_comma         : expr'''
     p[0] = NonTerminal(p)
 
-# Binary expressions (OPERATORS, +,-, SET_OPERATORS, LOG_OPERATORS, STAR)
+# Binary expressions (OPERATORS, +,-, SET_OPERATORS, AND, OR, STAR)
 def p_expr_binary(p):
     '''expr_binary        : expr OPERATOR       expr
                           | expr PLUS_MINUS     expr
                           | expr SET_OPERATOR   expr
-                          | expr LOG_OPERATOR   expr
+                          | expr AND            expr
+                          | expr OR             expr
                           | expr STAR           expr'''
+    p[0] = NonTerminal(p)
+
+def p_expr_between(p):
+    '''expr_between       : expr BETWEEN expr'''
     p[0] = NonTerminal(p)
 
 # Unary operators ASC, DESC, NOT, -, +
@@ -259,6 +264,7 @@ def p_expr(p):
             | expr_order
             | expr_plus_minus
             | expr_not
+            | expr_between
             | expr_identifier
             | term_literal
             | analytic_function

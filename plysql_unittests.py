@@ -55,6 +55,22 @@ class TestPlySql(unittest.TestCase):
             self.assertEqual(v,p_metadata[k])
 
 
+    def test_between_01(self):
+        '''between 01'''
+        self.printStartBanner()
+        statement          = '''select c from t where c between 1 and 2 '''
+        refSyntaxStructure = [[['select', 'c'], ['from', 't']], ['where', ['c', 'between', ['1', 'and', '2']]]]
+        refDependencies    = dict(identifier_stack        = []
+                                 ,identifiers_column      = ['c','c']
+                                 ,literal_all             = ['1','2']
+                                 ,identifiers_table       = ['t']
+                                 )
+        
+        result             = self.parseStatement(statement)
+        self.assertNotEqual(result,None)
+        self.assertEqual(result.getSyntaxStructure(),refSyntaxStructure)
+        self.compareDependencies(result.getMetadata(),refDependencies)
+
     def test_create_table_1(self):
         '''create table test 1'''
         self.printStartBanner()
