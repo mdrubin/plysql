@@ -20,8 +20,8 @@ token_lookup = {
     'UNIQUE':       'UNIQUE',    
     'ALL':          'ALL',    
     'NULL':         'NULL',    
-    'AND':          'LOG_OPERATOR',    
-    'OR':           'LOG_OPERATOR',    
+    'AND':          'AND',    
+    'OR':           'OR',    
     'IN':           'OPERATOR',    
     'OVER':         'OPERATOR',    
     'IS':           'OPERATOR',    
@@ -31,6 +31,7 @@ token_lookup = {
     'THEN':         'THEN',
     'ELSE':         'ELSE',
     'END':          'END',
+    'BETWEEN':      'BETWEEN'
 }    
     
 tokens = [    
@@ -40,7 +41,6 @@ tokens = [
     'GROUP_BY',    
     'ORDER_BY',    
     'SET_OPERATOR',    
-    'LOG_OPERATOR',
     'OPERATOR',    
     'JOIN_OPERATOR',
     'PLUS_MINUS',
