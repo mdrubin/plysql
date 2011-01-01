@@ -74,6 +74,8 @@ tests = [
 #'test_view_1'           
 ]
 
+tests=['test_between_01']
+
 # Run all
 #suite = unittest.TestLoader().loadTestsFromTestCase(plysql_unittests.TestPlySql)
 
