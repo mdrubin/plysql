@@ -1,7 +1,9 @@
+HttpHeader='''Content-type: text/html \n'''
+
 pageHeader='''
               <p align="left"> 
-                <a href="/">Home</a> &nbsp; 
-                <a href="what-is-plysql">What is PlySql ?</a> &nbsp; 
+                <a href="index.py">Home</a> &nbsp; 
+                <a href="what-is-plysql.py">What is PlySql ?</a> &nbsp; 
                 <a href="http://code.google.com/p/plysql/">Project Home</a> &nbsp; 
                 <a href="http://blog.holkevisser.nl/">My Blog</a> &nbsp; 
               </p> 

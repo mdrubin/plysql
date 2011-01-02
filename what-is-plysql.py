@@ -1,6 +1,7 @@
 import plysql_web
 
-print'''<html>'''
+print plysql_web.HttpHeader
+print '''<html>'''
 print plysql_web.htmlHead
 print '''<body>'''
 print plysql_web.pageHeader

@@ -7,7 +7,7 @@ handlers:
 - url: /
   script: index.py
 
-- url: /what-is-plysql
+- url: /what-is-plysql.py
   script: what-is-plysql.py
 
 - url: /img
