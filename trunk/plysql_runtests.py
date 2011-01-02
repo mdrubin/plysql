@@ -4,8 +4,8 @@ import unittest
 import plysql_unittests
 import plysql_reference
 
-ref = plysql_reference.PlySqlReference()
-ref.showReference()
+#ref = plysql_reference.PlySqlReference()
+#ref.showReference()
 
 # Run 1
 #unittest.main()

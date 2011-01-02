@@ -43,6 +43,7 @@ create table table01
 ,table02_id number)
 '''
 
+    print plysql_web.HttpHeader
     print '''<html>'''
     print plysql_web.htmlHead
     print '''<body>'''
@@ -51,7 +52,7 @@ create table table01
         <center>
           <img src="img/plysql-logo-100.png" alT'="PlySql"> 
           <p>To make a metadata analysis please enter your sql script below.</p>
-          <form name="form1" method="post" action="/" >
+          <form name="form1" method="post" action="index.py" >
             <textarea name="p_statement" rows="20" cols="120">'''
     print p_statement
     print '''
@@ -72,16 +73,13 @@ create table table01
 else:
     p_statement = form['p_statement'].value.strip()
 
-    print '''Content-Type: text/html\n
-    <html>
-    '''
+    print plysql_web.HttpHeader
+    print '''<html>'''
     print plysql_web.htmlHead
-    print '''
-    <body>
-    '''
+    print '''<body>'''
     print plysql_web.pageHeader
     print '''
-        <form name="form1" method="post" action="/">
+        <form name="form1" method="post" action="index.py">
           <img src="img/plysql-logo-060.png" alT'="PlySql"> 
           <textarea name="p_statement" rows="6" cols="60">'''
     print p_statement
