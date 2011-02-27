@@ -1,0 +1,19 @@
+<html>                                                                  
+  <head>                                                                  
+    <script type="text/javascript" src="jquery.js"></script>          
+    <script type="text/javascript">                                       
+        $(document).ready(function() {
+            $("a").click(function() {
+                alert("Hello world!");
+            });
+            jQuery.get('http://holkevisser.nl/foo.txt', function(data) {
+                alert(data);
+            });            
+        }); 
+    </script>                                                             
+  </head>                                                                 
+  <body>                                                                  
+    <a href="">Link</a>
+  </body>                                                                 
+  </html>
+ 
