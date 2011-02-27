@@ -1,0 +1,20 @@
+org.cytoscapeweb.Visualization()
+    div_id
+    options
+    
+    .draw()
+        draw_options
+            layout
+                name
+                options
+            visualStyle
+                global
+                nodes
+                    shape
+                    borderWidth
+                    borderColor
+                    size
+                        defaultValue
+                    color    
+                edges
+                    

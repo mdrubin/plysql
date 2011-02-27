@@ -1,0 +1,19 @@
+<graphml>
+  <key id="label" for="all" attr.name="label" attr.type="string"/>
+  <key id="foo" for="node" attr.name="foo" attr.type="string"/>
+  <key id="bar" for="edge" attr.name="bar" attr.type="string"/>
+  <graph edgedefault="undirected">
+    <node id="1">
+        <data key="label">XMCARE_STG.STG_PRODUCTIE_REALISATIE</data>
+        <data key="foo">Is this the real life?</data>
+    </node>
+    <node id="2">
+        <data key="label">2</data>
+        <data key="foo">Is this just fantasy?</data>
+    </node>
+    <edge target="1" source="2">
+        <data key="label">2 to 1</data>
+        <data key="bar">Caught in a landslide...</data>
+    </edge>
+  </graph>
+</graphml>
